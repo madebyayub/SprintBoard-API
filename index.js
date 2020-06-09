@@ -17,11 +17,16 @@ app.use(bp.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3001;
 
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/sprintboard", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  useFindAndModify: true,
-});
+mongoose.connect(
+  process.env.MONGODB_URI ||
+    "mongodb+srv://admin:admin@sprintboardcluster-mtbzm.mongodb.net/SprintBoard?retryWrites=true&w=majority" ||
+    "mongodb://localhost/sprintboard",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: true,
+  }
+);
 
 mongoose.connection.on("connected", () => {
   console.log("Connected to Mongoose Database");
