@@ -17,16 +17,11 @@ app.use(bp.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3001;
 
-mongoose.connect(
-  process.env.MONGODB_URI ||
-    "mongodb+srv://admin:admin@sprintboardcluster-mtbzm.mongodb.net/SprintBoard?retryWrites=true&w=majority" ||
-    "mongodb://localhost/sprintboard",
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useFindAndModify: true,
-  }
-);
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/sprintboard", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: true,
+});
 
 mongoose.connection.on("connected", () => {
   console.log("Connected to Mongoose Database");
@@ -44,35 +39,71 @@ mongoose.connection.on("connected", () => {
 app.post("/team", function (req, res) {
   User.findOne({ userID: req.body.userID }, function (err, user) {
     if (err) {
-      res.json({ response: "POST - ERROR FINDING THE USER" });
+      res.sendStatus(500);
     } else {
-      if (!user) {
-        const newUser = new User({
-          userID: req.body.userID,
-          name: req.body.username,
-        });
-        const newTeam = new Team({
-          name: req.body.teamname.toLowerCase(),
-          members: [newUser],
-          lead: newUser,
-          stories: [],
-          sprints: [],
-        });
-        newUser.team = newTeam;
-        newUser.save((error) => {
-          if (!error) {
-            newTeam.save((error) => {
-              if (!error) {
-                res.json({ response: "Succesfully saved new team" });
-              } else {
-                res.json({ response: "Error saving new team" });
-              }
-            });
+      Team.findOne({ name: req.body.teamname }, function (err, team) {
+        if (!team) {
+          if (err) {
+            res.sendStatus(500);
           } else {
-            res.json({ response: "Error saving new user" });
+            if (!user) {
+              const newUser = new User({
+                userID: req.body.userID,
+                name: req.body.username,
+              });
+              const newTeam = new Team({
+                name: req.body.teamname,
+                members: [newUser],
+                lead: newUser,
+                stories: [],
+                sprints: [],
+              });
+              newUser.team = newTeam;
+              newUser.save((error) => {
+                if (!error) {
+                  newTeam.save((error) => {
+                    if (!error) {
+                      res.json({ response: "Succesfully saved new team" });
+                    } else {
+                      res.sendStatus(500);
+                    }
+                  });
+                } else {
+                  res.sendStatus(500);
+                }
+              });
+            } else {
+              if (user.team.length > 0) {
+                res.json({ response: "User is already apart of another team" });
+              } else {
+                const newTeam = new Team({
+                  name: req.body.teamname,
+                  members: [user],
+                  lead: user,
+                  stories: [],
+                  sprints: [],
+                });
+                user.team = newTeam;
+                user.save((error) => {
+                  if (!error) {
+                    newTeam.save((error) => {
+                      if (!error) {
+                        res.json({ response: "Succesfully saved new team" });
+                      } else {
+                        res.sendStatus(500);
+                      }
+                    });
+                  } else {
+                    res.sendStatus(500);
+                  }
+                });
+              }
+            }
           }
-        });
-      }
+        } else {
+          res.json({ response: "Team with that name already exists" });
+        }
+      });
     }
   });
 });
@@ -119,8 +150,8 @@ app.patch("/team", function (req, res) {
               res.status(404).send("Team not found");
             } else {
               if (req.body.instruction === "ADD") {
-                if (user.team) {
-                  res.json(user.team);
+                if (user.team.length > 0) {
+                  res.json(user.team[0]);
                 } else {
                   team.members = [...team.members, user];
                   user.team = team;
@@ -143,7 +174,7 @@ app.patch("/team", function (req, res) {
                   return member.toString() != user._id;
                 });
                 team.members = newMembers;
-                user.team = null;
+                user.team = [];
                 user.save((error) => {
                   if (!error) {
                     team.save((error) => {
@@ -168,8 +199,8 @@ app.patch("/team", function (req, res) {
   });
 });
 // GET ROUTE TO GET TEAM INFORMATION OF A USER
-app.get("/team", function (req, res) {
-  User.findOne({ userID: req.body.userID }, function (err, user) {
+app.get("/team/user/:id", function (req, res) {
+  User.findOne({ userID: req.params.id }, function (err, user) {
     if (err) {
       res.sendStatus(500);
     } else {
@@ -182,7 +213,7 @@ app.get("/team", function (req, res) {
           }
         });
       } else {
-        res.status(404).send("User not found");
+        res.json({ team: null });
       }
     }
   });
