@@ -14,6 +14,7 @@ let sprintSchema = new mongoose.Schema({
       ref: "Sprint",
     },
   ],
+  current: Boolean,
 });
 
 module.exports = mongoose.model("Sprint", sprintSchema);
