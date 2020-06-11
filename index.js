@@ -17,7 +17,9 @@ app.use(bp.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3001;
 
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/sprintboard", {
+mongoose.connect(process.env.MONGODB_URI || 
+  "mongodb+srv://admin:admin@sprintboardcluster-mtbzm.mongodb.net/SprintBoard?retryWrites=true&w=majority" ||
+  "mongodb://localhost/sprintboard", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useFindAndModify: true,
@@ -227,6 +229,78 @@ app.get("/team/:name", function (req, res) {
       res.json(teams);
     }
   });
+});
+
+app.post("/story", function(req,res){
+    Team.findById(req.body.team._id, function(err,team) {
+        if (err) {
+          res.sendStatus(500);
+        }else{
+          if(!team){
+            res.sendStatus(404);
+          }
+          else{
+            User.findOne({userID: req.body.story.user}, function(err, user){
+              if (err){
+                res.sendStatus(500);
+              }
+              else {
+                if (!user){
+                  res.sendStatus(404);
+                }
+                else{
+                  User.findOne({userID: req.body.story.assigned}, function(err, assignedUser){
+                    if (err){
+                      res.sendStatus(500);
+                    }
+                    else {
+                      let newStory;
+                      if (!assignedUser){
+                        newStory = new Story({
+                          title: req.body.story.title,
+                          author: user,
+                          description: req.body.story.description,
+                          status: req.body.story.status,
+                          assigned: null,
+                          points: req.body.story.points,
+                          team: team,
+                          sprint: null 
+                        });
+                      }
+                      else{
+                        newStory = new Story({
+                          title: req.body.story.title,
+                          author: user,
+                          description: req.body.story.description,
+                          status: req.body.story.status,
+                          assigned: assignedUser,
+                          points: req.body.story.points,
+                          team: team,
+                          sprint: null 
+                        });
+                      }
+                      newStory.save((error) => {
+                        if (!error) {
+                          team.stories.push(newStory);
+                          team.save((error) => {
+                            if (!error) {
+                              res.json({ response: "Succesfully created a user story" });
+                            } else {
+                              res.sendStatus(500);
+                            }
+                          });
+                        } else {
+                          res.sendStatus(500);
+                        }
+                      });
+                    }
+                  })
+                }
+              }
+            })
+          }
+        }
+    });
 });
 /*
 
