@@ -302,6 +302,18 @@ app.post("/story", function(req,res){
         }
     });
 });
+
+app.get('/stories/:teamId', function(req,res){
+    Story.find( {team: req.params.teamId}  ,function(err,stories){
+      if (err){
+        res.sendStatus(404);
+      }
+      else{
+        res.json({stories});
+      }
+    });
+});
+
 /*
 
   Server listen setup
