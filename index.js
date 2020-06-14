@@ -234,6 +234,38 @@ app.get("/team/:name", function (req, res) {
   });
 });
 
+/* ROUTES ASSOCIATED WITH STORIES */
+
+// DELETE A STORY, AND REMOVE FROM TEAM ARRAY
+app.delete("/story", function (req, res) {
+  // First delete story from team array
+  Team.findById(req.body.story.team, function (err, team) {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      const newStories = team.stories.filter(
+        (story) => story != req.body.story._id
+      );
+      team.stories = newStories;
+      team.save((error) => {
+        if (error) {
+          res.sendStatus(500);
+        } else {
+          // Then delete story from story collection
+          Story.findByIdAndDelete(req.body.story._id, function (err, story) {
+            if (err) {
+              res.sendStatus(500);
+            } else {
+              res.json(team);
+            }
+          });
+        }
+      });
+    }
+  });
+  //res.json({});
+});
+// ADD A STORY TO A TEAM
 app.post("/story", function (req, res) {
   Team.findById(req.body.team._id, function (err, team) {
     if (err) {
@@ -304,6 +336,7 @@ app.post("/story", function (req, res) {
   });
 });
 
+// GET THE ARRAY OF STORIES FROM A TEAM
 app.get("/stories/:teamId", function (req, res) {
   Story.find({ team: req.params.teamId }, function (err, stories) {
     if (err) {
