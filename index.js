@@ -265,6 +265,7 @@ app.delete("/story", function (req, res) {
   });
   //res.json({});
 });
+
 // ADD A STORY TO A TEAM
 app.post("/story", function (req, res) {
   Team.findById(req.body.team._id, function (err, team) {
@@ -336,6 +337,87 @@ app.post("/story", function (req, res) {
   });
 });
 
+// EDIT USER STORY
+app.put("/story/:storyId", function(req,res){
+  Team.findById(req.body.team._id, function (err, team) {
+    if(err){
+      res.sendStatus(500);
+    }
+    else {
+      User.findOne({userID: req.body.story.user}, function(err,user){
+        if(err){
+          res.sendStatus(500);
+        }
+        else{
+          if(!user){
+            res.sendStatus(404);
+          }
+          else{
+            User.findOne({userID: req.body.story.assigned}, function(err,assignedUser){
+              if(err){
+                res.sendStatus(500);
+              }
+              else{
+                if (!assignedUser) {
+                  Story.findById({_id: req.params.storyId}, function(err, story){
+                    if (err){
+                      res.sendStatus(500);
+                    }
+                    else{
+                      if(!story){
+                        res.sendStatus(404);
+                      }
+                      else{
+                        story.title = req.body.story.title,
+                        story.author =  user,
+                        story.description = req.body.story.description,
+                        story.status = req.body.story.status,
+                        story.assigned = null,
+                        story.points = req.body.story.point,
+                        story.team = team,
+                        story.sprint = null
+                        story.save()
+                        console.log(story);
+                        res.json(story);
+                      }
+                    }
+                  });
+
+                }
+                else{
+                  Story.findById({storyID: req.params.storyId}, function(err, story){
+                    if (err){
+                      res.sendStatus(500);
+                    }
+                    else{
+                      if(!story){
+                        res.sendStatus(404);
+                      }
+                      else{
+                        story.title = req.story.title,
+                        story.author =  user,
+                        story.description = req.body.story.description,
+                        story.status = req.body.story.status,
+                        story.assigned = assignedUser,
+                        story.points = req.body.story.point,
+                        story.team = team,
+                        story.sprint = null
+                        story.save()
+                        console.log(story);
+                        res.json(story);
+                      }
+                    }
+                  });
+                } 
+              }
+            })
+          }
+        }
+      })
+    }
+  });
+});
+
 // GET THE ARRAY OF STORIES FROM A TEAM
 app.get("/stories/:teamId", function (req, res) {
   Story.find({ team: req.params.teamId }, function (err, stories) {
@@ -347,6 +429,46 @@ app.get("/stories/:teamId", function (req, res) {
   });
 });
 
+app.post("/sprint", function(req,res){
+  Team.findById(req.body.team._id, function(err,team){
+    if (err){
+      res.sendStatus(500);
+    }
+    else{
+      if (!team){
+        res.send("team not found");
+      }
+      else{
+        Sprint.findOne({number: req.body.sprint.number}, function(err,sprint) {
+          if(!sprint){
+            if (err){
+              res.sendStatus(500);
+            }
+            else{
+                const newSprint = new Sprint ({
+                  team: team,
+                  number: req.body.sprint.number,
+                  stories: [],
+                  current: req.body.sprint.current
+                })
+                newSprint.save((error)=>{
+                  if(!error){
+                    res.json({response: "successfully created new sprint"});
+                  }
+                  else{
+                    res.sendStatus(500);
+                  }
+                });
+            }
+          }
+          else{
+            res.sendStatus(500);
+          }
+        })
+      }
+    }
+  })
+});
 /*
 
   Server listen setup
