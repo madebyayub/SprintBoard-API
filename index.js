@@ -447,22 +447,44 @@ app.post("/sprint", function (req, res) {
                 stories: [],
                 current: req.body.sprint.current,
               });
-              newSprint.save((error) => {
-                if (!error) {
-                  res.json({ response: "successfully created new sprint" });
-                } else {
+              team.sprints.push(newSprint._id);
+              team.save((error) => {
+                if (error){
                   res.sendStatus(500);
+                }
+                else {
+                    newSprint.save((error) => {
+                      if (!error) {
+                        res.json({ sprints: team.sprints });
+                      } else {
+                        res.sendStatus(500);
+                      }
+                    });
                 }
               });
             }
-          } else {
-            res.sendStatus(500);
           }
         });
       }
     }
   });
 });
+// GET ALL SPRINTS FOR A TEAM
+app.get("/sprint/:teamId", function(req,res){
+  Sprint.find({team: req.params.teamId }, function(err, sprints){
+    if (err){
+      res.sendStatus(500);
+    }
+    else{
+      if (!sprints){
+        res.sendStatus(404);
+      }
+      else{
+        res.json(sprints);
+      }
+    }
+  })
+})
 /*
 
   Server listen setup
