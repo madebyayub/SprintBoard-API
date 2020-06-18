@@ -55,6 +55,7 @@ app.post("/team", function (req, res) {
               const newUser = new User({
                 userID: req.body.userID,
                 name: req.body.username,
+                profilePic: req.body.userpicture,
               });
               const newTeam = new Team({
                 name: req.body.teamname,
@@ -137,7 +138,26 @@ app.patch("/team", function (req, res) {
                   if (!error) {
                     team.save((error) => {
                       if (!error) {
-                        res.json(team);
+                        Team.findById(team._id)
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "author", model: "User" },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "assigned", model: "User" },
+                          })
+                          .populate("members")
+                          .populate("sprints")
+                          .exec((err, transaction) => {
+                            if (err) {
+                              res.sendStatus(500);
+                            } else {
+                              res.json({ team: transaction });
+                            }
+                          });
                       } else {
                         res.sendStatus(500);
                       }
@@ -164,7 +184,26 @@ app.patch("/team", function (req, res) {
                     if (!error) {
                       team.save((error) => {
                         if (!error) {
-                          res.json(team);
+                          Team.findById(team._id)
+                            .populate({
+                              path: "stories",
+                              model: "Story",
+                              populate: { path: "author", model: "User" },
+                            })
+                            .populate({
+                              path: "stories",
+                              model: "Story",
+                              populate: { path: "assigned", model: "User" },
+                            })
+                            .populate("members")
+                            .populate("sprints")
+                            .exec((err, transaction) => {
+                              if (err) {
+                                res.sendStatus(500);
+                              } else {
+                                res.json({ team: transaction });
+                              }
+                            });
                         } else {
                           res.sendStatus(500);
                         }
@@ -184,7 +223,26 @@ app.patch("/team", function (req, res) {
                   if (!error) {
                     team.save((error) => {
                       if (!error) {
-                        res.json(team);
+                        Team.findById(team._id)
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "author", model: "User" },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "assigned", model: "User" },
+                          })
+                          .populate("members")
+                          .populate("sprints")
+                          .exec((err, transaction) => {
+                            if (err) {
+                              res.sendStatus(500);
+                            } else {
+                              res.json({ team: transaction });
+                            }
+                          });
                       } else {
                         res.sendStatus(500);
                       }
@@ -210,13 +268,26 @@ app.get("/team/user/:id", function (req, res) {
       res.sendStatus(500);
     } else {
       if (user) {
-        Team.findById(user.team, function (err, team) {
-          if (err) {
-            res.status(404).send("Team not found");
-          } else {
-            res.json({ team });
-          }
-        });
+        Team.findById(user.team)
+          .populate({
+            path: "stories",
+            model: "Story",
+            populate: { path: "author", model: "User" },
+          })
+          .populate({
+            path: "stories",
+            model: "Story",
+            populate: { path: "assigned", model: "User" },
+          })
+          .populate("members")
+          .populate("sprints")
+          .exec((err, transaction) => {
+            if (err) {
+              res.sendStatus(500);
+            } else {
+              res.json({ team: transaction });
+            }
+          });
       } else {
         res.json({ team: null });
       }
@@ -225,13 +296,26 @@ app.get("/team/user/:id", function (req, res) {
 });
 // GET ROUTE TO GET A MATCH FOR A TEAM NAME PROVIDED BY ROUTE PARAMS
 app.get("/team/:name", function (req, res) {
-  Team.find({ name: req.params.name }, function (err, teams) {
-    if (err) {
-      res.sendStatus(500);
-    } else {
-      res.json(teams);
-    }
-  });
+  Team.find({ name: req.params.name })
+    .populate({
+      path: "stories",
+      model: "Story",
+      populate: { path: "author", model: "User" },
+    })
+    .populate({
+      path: "stories",
+      model: "Story",
+      populate: { path: "assigned", model: "User" },
+    })
+    .populate("members")
+    .populate("sprints")
+    .exec((err, transaction) => {
+      if (err) {
+        res.sendStatus(500);
+      } else {
+        res.json({ team: transaction });
+      }
+    });
 });
 
 /* ROUTES ASSOCIATED WITH STORIES */
@@ -256,7 +340,26 @@ app.delete("/story", function (req, res) {
             if (err) {
               res.sendStatus(500);
             } else {
-              res.json(team);
+              Team.findById(team._id)
+                .populate({
+                  path: "stories",
+                  model: "Story",
+                  populate: { path: "author", model: "User" },
+                })
+                .populate({
+                  path: "stories",
+                  model: "Story",
+                  populate: { path: "assigned", model: "User" },
+                })
+                .populate("members")
+                .populate("sprints")
+                .exec((err, transaction) => {
+                  if (err) {
+                    res.sendStatus(500);
+                  } else {
+                    res.json({ stories: transaction.stories });
+                  }
+                });
             }
           });
         }
@@ -317,7 +420,26 @@ app.post("/story", function (req, res) {
                     if (!error) {
                       newStory.save((error) => {
                         if (!error) {
-                          res.json({ stories: team.stories });
+                          Team.findById(team._id)
+                            .populate({
+                              path: "stories",
+                              model: "Story",
+                              populate: { path: "author", model: "User" },
+                            })
+                            .populate({
+                              path: "stories",
+                              model: "Story",
+                              populate: { path: "assigned", model: "User" },
+                            })
+                            .populate("members")
+                            .populate("sprints")
+                            .exec((err, transaction) => {
+                              if (err) {
+                                res.sendStatus(500);
+                              } else {
+                                res.json({ stories: transaction.stories });
+                              }
+                            });
                         } else {
                           res.sendStatus(500);
                         }
@@ -376,7 +498,26 @@ app.put("/story/:storyId", function (req, res) {
                         story.team = team;
                         story.sprint = null;
                         story.save();
-                        res.json(team.stories);
+                        Team.findById(team._id)
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "author", model: "User" },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "assigned", model: "User" },
+                          })
+                          .populate("members")
+                          .populate("sprints")
+                          .exec((err, transaction) => {
+                            if (err) {
+                              res.sendStatus(500);
+                            } else {
+                              res.json(transaction.stories);
+                            }
+                          });
                       }
                     }
                   });
@@ -416,13 +557,25 @@ app.put("/story/:storyId", function (req, res) {
 
 // GET THE ARRAY OF STORIES FROM A TEAM
 app.get("/stories/:teamId", function (req, res) {
+  Story.find({ team: req.params.teamId })
+    .populate("author")
+    .populate("assigned")
+    .exec((err, transaction) => {
+      if (err) {
+        res.sendStatus(500);
+      } else {
+        res.json({ stories: transaction });
+      }
+    });
+
+  /*
   Story.find({ team: req.params.teamId }, function (err, stories) {
     if (err) {
       res.sendStatus(404);
     } else {
       res.json({ stories });
     }
-  });
+  });*/
 });
 
 app.post("/sprint", function (req, res) {
@@ -449,17 +602,16 @@ app.post("/sprint", function (req, res) {
               });
               team.sprints.push(newSprint._id);
               team.save((error) => {
-                if (error){
+                if (error) {
                   res.sendStatus(500);
-                }
-                else {
-                    newSprint.save((error) => {
-                      if (!error) {
-                        res.json({ sprints: team.sprints });
-                      } else {
-                        res.sendStatus(500);
-                      }
-                    });
+                } else {
+                  newSprint.save((error) => {
+                    if (!error) {
+                      res.json({ sprints: team.sprints });
+                    } else {
+                      res.sendStatus(500);
+                    }
+                  });
                 }
               });
             }
@@ -470,21 +622,19 @@ app.post("/sprint", function (req, res) {
   });
 });
 // GET ALL SPRINTS FOR A TEAM
-app.get("/sprint/:teamId", function(req,res){
-  Sprint.find({team: req.params.teamId }, function(err, sprints){
-    if (err){
+app.get("/sprint/:teamId", function (req, res) {
+  Sprint.find({ team: req.params.teamId }, function (err, sprints) {
+    if (err) {
       res.sendStatus(500);
-    }
-    else{
-      if (!sprints){
+    } else {
+      if (!sprints) {
         res.sendStatus(404);
-      }
-      else{
+      } else {
         res.json(sprints);
       }
     }
-  })
-})
+  });
+});
 /*
 
   Server listen setup
