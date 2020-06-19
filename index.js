@@ -597,10 +597,19 @@ app.post("/sprint", function (req, res) {
               const newSprint = new Sprint({
                 team: team,
                 number: req.body.sprint.number,
-                stories: [],
+                stories: req.body.sprint.stories,
                 current: req.body.sprint.current,
               });
               team.sprints.push(newSprint._id);
+              for (let i = 0; i < req.body.sprint.stories.length; i++) {
+                Story.findById(req.body.sprint.stories[i], function (
+                  err,
+                  story
+                ) {
+                  story.sprint = newSprint;
+                  story.save();
+                });
+              }
               team.save((error) => {
                 if (error) {
                   res.sendStatus(500);
