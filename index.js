@@ -427,12 +427,14 @@ app.post("/story", function (req, res) {
                             sprint: sprintRef,
                           });
                         }
-                        sprint.stories.push(newStory._id);
-                        sprint.save((error) => {
-                          if(error){
-                            res.sendStatus(500);
-                          }
-                        });
+                        if (sprintRef != null){
+                          sprint.stories.push(newStory._id);
+                          sprint.save((error) => {
+                            if(error){
+                              res.sendStatus(500);
+                            }
+                          });
+                        }
                         team.stories.push(newStory._id);
                         team.save((error) => {
                           if (!error) {
