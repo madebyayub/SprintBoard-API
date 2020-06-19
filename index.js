@@ -377,80 +377,100 @@ app.post("/story", function (req, res) {
       if (!team) {
         res.sendStatus(404);
       } else {
-        User.findOne({ userID: req.body.story.user }, function (err, user) {
-          if (err) {
+        Sprint.findOne ({number: req.body.story.sprint}, function(err,sprint){
+          if (err){
             res.sendStatus(500);
-          } else {
-            if (!user) {
-              res.sendStatus(404);
-            } else {
-              User.findOne({ userID: req.body.story.assigned }, function (
-                err,
-                assignedUser
-              ) {
+          }
+          else{
+            let sprintRef = null;
+            if (!sprint){
+              sprintRef = null;
+            }
+            else{
+              sprintRef = sprint._id;
+            }
+              User.findOne({ userID: req.body.story.user }, function (err, user) {
                 if (err) {
                   res.sendStatus(500);
                 } else {
-                  let newStory;
-                  if (!assignedUser) {
-                    newStory = new Story({
-                      title: req.body.story.title,
-                      author: user,
-                      description: req.body.story.description,
-                      status: req.body.story.status,
-                      assigned: null,
-                      points: req.body.story.points,
-                      team: team,
-                      sprint: null,
-                    });
+                  if (!user) {
+                    res.sendStatus(404);
                   } else {
-                    newStory = new Story({
-                      title: req.body.story.title,
-                      author: user,
-                      description: req.body.story.description,
-                      status: req.body.story.status,
-                      assigned: assignedUser,
-                      points: req.body.story.points,
-                      team: team,
-                      sprint: null,
-                    });
-                  }
-                  team.stories.push(newStory._id);
-                  team.save((error) => {
-                    if (!error) {
-                      newStory.save((error) => {
-                        if (!error) {
-                          Team.findById(team._id)
-                            .populate({
-                              path: "stories",
-                              model: "Story",
-                              populate: { path: "author", model: "User" },
-                            })
-                            .populate({
-                              path: "stories",
-                              model: "Story",
-                              populate: { path: "assigned", model: "User" },
-                            })
-                            .populate("members")
-                            .populate("sprints")
-                            .exec((err, transaction) => {
-                              if (err) {
-                                res.sendStatus(500);
+                    User.findOne({ userID: req.body.story.assigned }, function (
+                      err,
+                      assignedUser
+                    ) {
+                      if (err) {
+                        res.sendStatus(500);
+                      } else {
+                        let newStory;
+                        if (!assignedUser) {
+                          newStory = new Story({
+                            title: req.body.story.title,
+                            author: user,
+                            description: req.body.story.description,
+                            status: req.body.story.status,
+                            assigned: null,
+                            points: req.body.story.points,
+                            team: team,
+                            sprint: sprintRef,
+                          });
+                        } else {
+                          newStory = new Story({
+                            title: req.body.story.title,
+                            author: user,
+                            description: req.body.story.description,
+                            status: req.body.story.status,
+                            assigned: assignedUser,
+                            points: req.body.story.points,
+                            team: team,
+                            sprint: sprintRef,
+                          });
+                        }
+                        sprint.stories.push(newStory._id);
+                        sprint.save((error) => {
+                          if(error){
+                            res.sendStatus(500);
+                          }
+                        });
+                        team.stories.push(newStory._id);
+                        team.save((error) => {
+                          if (!error) {
+                            newStory.save((error) => {
+                              if (!error) {
+                                Team.findById(team._id)
+                                  .populate({
+                                    path: "stories",
+                                    model: "Story",
+                                    populate: { path: "author", model: "User" },
+                                  })
+                                  .populate({
+                                    path: "stories",
+                                    model: "Story",
+                                    populate: { path: "assigned", model: "User" },
+                                  })
+                                  .populate("members")
+                                  .populate("sprints")
+                                  .exec((err, transaction) => {
+                                    if (err) {
+                                      res.sendStatus(500);
+                                    } else {
+                                      res.json({ stories: transaction.stories });
+                                    }
+                                  });
                               } else {
-                                res.json({ stories: transaction.stories });
+                                res.sendStatus(500);
                               }
                             });
-                        } else {
-                          res.sendStatus(500);
-                        }
-                      });
-                    } else {
-                      res.sendStatus(500);
-                    }
-                  });
+                          } else {
+                            res.sendStatus(500);
+                          }
+                        });
+                      }
+                    });
+                  }
                 }
               });
-            }
           }
         });
       }
