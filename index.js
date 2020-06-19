@@ -616,7 +616,27 @@ app.post("/sprint", function (req, res) {
                 } else {
                   newSprint.save((error) => {
                     if (!error) {
-                      res.json({ sprints: team.sprints });
+                      Team.findById(team._id)
+                        .populate({
+                          path: "stories",
+                          model: "Story",
+                          populate: { path: "author", model: "User" },
+                        })
+                        .populate({
+                          path: "stories",
+                          model: "Story",
+                          populate: { path: "assigned", model: "User" },
+                        })
+                        .populate("members")
+                        .populate("sprints")
+                        .exec((err, transaction) => {
+                          if (err) {
+                            res.sendStatus(500);
+                          } else {
+                            res.json(transaction);
+                          }
+                        });
+                      //res.json({ sprints: team.sprints });
                     } else {
                       res.sendStatus(500);
                     }
