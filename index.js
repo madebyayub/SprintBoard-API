@@ -147,6 +147,11 @@ app.patch("/team", function (req, res) {
                           .populate({
                             path: "stories",
                             model: "Story",
+                            populate: { path: "sprint", model: "Sprint" },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
                             populate: { path: "assigned", model: "User" },
                           })
                           .populate("members")
@@ -193,6 +198,11 @@ app.patch("/team", function (req, res) {
                             .populate({
                               path: "stories",
                               model: "Story",
+                              populate: { path: "sprint", model: "Sprint" },
+                            })
+                            .populate({
+                              path: "stories",
+                              model: "Story",
                               populate: { path: "assigned", model: "User" },
                             })
                             .populate("members")
@@ -228,6 +238,11 @@ app.patch("/team", function (req, res) {
                             path: "stories",
                             model: "Story",
                             populate: { path: "author", model: "User" },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "sprint", model: "Sprint" },
                           })
                           .populate({
                             path: "stories",
@@ -310,6 +325,11 @@ app.get("/team/:name", function (req, res) {
     .populate({
       path: "stories",
       model: "Story",
+      populate: { path: "sprint", model: "Sprint" },
+    })
+    .populate({
+      path: "stories",
+      model: "Story",
       populate: { path: "assigned", model: "User" },
     })
     .populate("members")
@@ -350,6 +370,11 @@ app.delete("/story", function (req, res) {
                   path: "stories",
                   model: "Story",
                   populate: { path: "author", model: "User" },
+                })
+                .populate({
+                  path: "stories",
+                  model: "Story",
+                  populate: { path: "sprint", model: "Sprint" },
                 })
                 .populate({
                   path: "stories",
@@ -455,6 +480,11 @@ app.post("/story", function (req, res) {
                                 .populate({
                                   path: "stories",
                                   model: "Story",
+                                  populate: { path: "sprint", model: "Sprint" },
+                                })
+                                .populate({
+                                  path: "stories",
+                                  model: "Story",
                                   populate: { path: "assigned", model: "User" },
                                 })
                                 .populate("members")
@@ -530,6 +560,11 @@ app.put("/story/:storyId", function (req, res) {
                           path: "stories",
                           model: "Story",
                           populate: { path: "author", model: "User" },
+                        })
+                        .populate({
+                          path: "stories",
+                          model: "Story",
+                          populate: { path: "sprint", model: "Sprint" },
                         })
                         .populate({
                           path: "stories",
@@ -614,6 +649,11 @@ app.post("/sprint", function (req, res) {
                             path: "stories",
                             model: "Story",
                             populate: { path: "author", model: "User" },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: { path: "sprint", model: "Sprint" },
                           })
                           .populate({
                             path: "stories",
