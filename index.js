@@ -686,17 +686,29 @@ app.post("/sprint", function (req, res) {
 });
 // GET ALL SPRINTS FOR A TEAM
 app.get("/sprint/:teamId", function (req, res) {
-  Sprint.find({ team: req.params.teamId }, function (err, sprints) {
-    if (err) {
-      res.sendStatus(500);
-    } else {
-      if (!sprints) {
-        res.sendStatus(404);
+  Sprint.find({ team: req.params.teamId })
+    .populate({
+      path: "stories",
+      model: "Story",
+      populate: { path: "author", model: "User" },
+    })
+    .populate({
+      path: "stories",
+      model: "Story",
+      populate: { path: "sprint", model: "Sprint" },
+    })
+    .populate({
+      path: "stories",
+      model: "Story",
+      populate: { path: "assigned", model: "User" },
+    })
+    .exec((err, transaction) => {
+      if (err) {
+        res.sendStatus(500);
       } else {
-        res.json(sprints);
+        res.json(transaction);
       }
-    }
-  });
+    });
 });
 /*
 
