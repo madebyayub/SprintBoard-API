@@ -572,12 +572,38 @@ app.put("/story/:storyId", function (req, res) {
                           populate: { path: "assigned", model: "User" },
                         })
                         .populate("members")
-                        .populate("sprints")
+                        .populate({
+                          path: "sprints",
+                          model: "Sprint",
+                          populate: {
+                            path: "stories",
+                            model: "Story",
+                            populate: {
+                              path: "assigned",
+                              model: "User",
+                            },
+                          },
+                        })
+                        .populate({
+                          path: "sprints",
+                          model: "Sprint",
+                          populate: {
+                            path: "stories",
+                            model: "Story",
+                            populate: {
+                              path: "author",
+                              model: "User",
+                            },
+                          },
+                        })
                         .exec((err, transaction) => {
                           if (err) {
                             res.sendStatus(500);
                           } else {
-                            res.json(transaction.stories);
+                            res.json({
+                              stories: transaction.stories,
+                              sprints: transaction.sprints,
+                            });
                           }
                         });
                     }
