@@ -488,7 +488,30 @@ app.post("/story", function (req, res) {
                                   populate: { path: "assigned", model: "User" },
                                 })
                                 .populate("members")
-                                .populate("sprints")
+                                .populate({
+                                  path: "sprints",
+                                  model: "Sprint",
+                                  populate: {
+                                    path: "stories",
+                                    model: "Story",
+                                    populate: {
+                                      path: "assigned",
+                                      model: "User",
+                                    },
+                                  },
+                                })
+                                .populate({
+                                  path: "sprints",
+                                  model: "Sprint",
+                                  populate: {
+                                    path: "stories",
+                                    model: "Story",
+                                    populate: {
+                                      path: "author",
+                                      model: "User",
+                                    },
+                                  },
+                                })
                                 .exec((err, transaction) => {
                                   if (err) {
                                     res.sendStatus(500);
@@ -522,96 +545,392 @@ app.put("/story/:storyId", function (req, res) {
     if (err) {
       res.sendStatus(500);
     } else {
-      User.findOne({ userID: req.body.story.user }, function (err, user) {
+      User.findById(req.body.story.assigned, function (err, assignedUser) {
         if (err) {
           res.sendStatus(500);
         } else {
-          if (!user) {
-            res.sendStatus(404);
-          } else {
-            User.findById(req.body.story.assigned, function (
-              err,
-              assignedUser
-            ) {
-              if (err) {
-                res.sendStatus(500);
+          Story.findById({ _id: req.params.storyId }, function (err, story) {
+            if (err) {
+              res.sendStatus(500);
+            } else {
+              if (!story) {
+                res.sendStatus(404);
               } else {
-                Story.findById({ _id: req.params.storyId }, function (
-                  err,
-                  story
-                ) {
-                  if (err) {
-                    res.sendStatus(500);
-                  } else {
-                    if (!story) {
-                      res.sendStatus(404);
-                    } else {
-                      story.title = req.body.story.title;
-                      story.author = user;
-                      story.description = req.body.story.description;
-                      story.status = req.body.story.status;
-                      story.assigned = assignedUser;
-                      story.points = req.body.story.point;
-                      story.team = team;
-                      story.sprint = req.body.story.sprint;
-                      story.save();
-                      Team.findById(team._id)
-                        .populate({
-                          path: "stories",
-                          model: "Story",
-                          populate: { path: "author", model: "User" },
-                        })
-                        .populate({
-                          path: "stories",
-                          model: "Story",
-                          populate: { path: "sprint", model: "Sprint" },
-                        })
-                        .populate({
-                          path: "stories",
-                          model: "Story",
-                          populate: { path: "assigned", model: "User" },
-                        })
-                        .populate("members")
-                        .populate({
-                          path: "sprints",
+                const prevSprint = story.sprint;
+                // Change Story attributes
+                story.title = req.body.story.title;
+                story.author = story.author;
+                story.description = req.body.story.description;
+                story.status = req.body.story.status;
+                story.assigned = assignedUser;
+                story.points = req.body.story.point;
+                story.team = team;
+                story.sprint = req.body.story.sprint;
+                story.save();
+                /* Change the story list of previous Sprint, and new Sprint 
+                      CASE 1: BACKLOG TO BACKLOG
+                      CASE 2: BACKLOG TO SPRINT
+                      CASE 3: SAME SPRINT
+                      CASE 4: SPRINT TO BACKLOG
+                      CASE 5: SPRINT TO SPRINT */
+                // If new sprint is same as old sprint
+                if (prevSprint === null) {
+                  if (req.body.story.sprint === null) {
+                    // CASE 1
+                    Team.findById(team._id)
+                      .populate({
+                        path: "stories",
+                        model: "Story",
+                        populate: {
+                          path: "author",
+                          model: "User",
+                        },
+                      })
+                      .populate({
+                        path: "stories",
+                        model: "Story",
+                        populate: {
+                          path: "sprint",
                           model: "Sprint",
+                        },
+                      })
+                      .populate({
+                        path: "stories",
+                        model: "Story",
+                        populate: {
+                          path: "assigned",
+                          model: "User",
+                        },
+                      })
+                      .populate("members")
+                      .populate({
+                        path: "sprints",
+                        model: "Sprint",
+                        populate: {
+                          path: "stories",
+                          model: "Story",
                           populate: {
-                            path: "stories",
-                            model: "Story",
-                            populate: {
-                              path: "assigned",
-                              model: "User",
-                            },
+                            path: "assigned",
+                            model: "User",
                           },
-                        })
-                        .populate({
-                          path: "sprints",
-                          model: "Sprint",
+                        },
+                      })
+                      .populate({
+                        path: "sprints",
+                        model: "Sprint",
+                        populate: {
+                          path: "stories",
+                          model: "Story",
                           populate: {
+                            path: "author",
+                            model: "User",
+                          },
+                        },
+                      })
+                      .exec((err, transaction) => {
+                        if (err) {
+                          res.sendStatus(500);
+                        } else {
+                          res.json({
+                            stories: transaction.stories,
+                            sprints: transaction.sprints,
+                          });
+                        }
+                      });
+                  } else {
+                    // CASE 2
+                    Sprint.findById(req.body.story.sprint, function (
+                      err,
+                      newSprint
+                    ) {
+                      if (err) {
+                        res.sendStatus(500);
+                      } else {
+                        newSprint.stories.push(story._id);
+                        newSprint.save();
+                        Team.findById(team._id)
+                          .populate({
                             path: "stories",
                             model: "Story",
                             populate: {
                               path: "author",
                               model: "User",
                             },
-                          },
-                        })
-                        .exec((err, transaction) => {
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: {
+                              path: "sprint",
+                              model: "Sprint",
+                            },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: {
+                              path: "assigned",
+                              model: "User",
+                            },
+                          })
+                          .populate("members")
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "assigned",
+                                model: "User",
+                              },
+                            },
+                          })
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "author",
+                                model: "User",
+                              },
+                            },
+                          })
+                          .exec((err, transaction) => {
+                            if (err) {
+                              res.sendStatus(500);
+                            } else {
+                              res.json({
+                                stories: transaction.stories,
+                                sprints: transaction.sprints,
+                              });
+                            }
+                          });
+                      }
+                    });
+                  }
+                } else if (
+                  prevSprint._id.toString() === req.body.story.sprint
+                ) {
+                  // CASE 3
+                  Team.findById(team._id)
+                    .populate({
+                      path: "stories",
+                      model: "Story",
+                      populate: {
+                        path: "author",
+                        model: "User",
+                      },
+                    })
+                    .populate({
+                      path: "stories",
+                      model: "Story",
+                      populate: {
+                        path: "sprint",
+                        model: "Sprint",
+                      },
+                    })
+                    .populate({
+                      path: "stories",
+                      model: "Story",
+                      populate: {
+                        path: "assigned",
+                        model: "User",
+                      },
+                    })
+                    .populate("members")
+                    .populate({
+                      path: "sprints",
+                      model: "Sprint",
+                      populate: {
+                        path: "stories",
+                        model: "Story",
+                        populate: {
+                          path: "assigned",
+                          model: "User",
+                        },
+                      },
+                    })
+                    .populate({
+                      path: "sprints",
+                      model: "Sprint",
+                      populate: {
+                        path: "stories",
+                        model: "Story",
+                        populate: {
+                          path: "author",
+                          model: "User",
+                        },
+                      },
+                    })
+                    .exec((err, transaction) => {
+                      if (err) {
+                        res.sendStatus(500);
+                      } else {
+                        res.json({
+                          stories: transaction.stories,
+                          sprints: transaction.sprints,
+                        });
+                      }
+                    });
+                } else if (prevSprint !== null) {
+                  // CASE 4 and CASE 5
+                  Sprint.findById(prevSprint, function (err, previousSprint) {
+                    if (err) {
+                      res.sendStatus(500);
+                    } else {
+                      previousSprint.stories = previousSprint.stories.filter(
+                        (sprintStory) => {
+                          return (
+                            sprintStory._id.toString() !== story._id.toString()
+                          );
+                        }
+                      );
+                      previousSprint.save();
+                      if (req.body.story.sprint === null) {
+                        // CASE 4
+                        Team.findById(team._id)
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: {
+                              path: "author",
+                              model: "User",
+                            },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: {
+                              path: "sprint",
+                              model: "Sprint",
+                            },
+                          })
+                          .populate({
+                            path: "stories",
+                            model: "Story",
+                            populate: {
+                              path: "assigned",
+                              model: "User",
+                            },
+                          })
+                          .populate("members")
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "assigned",
+                                model: "User",
+                              },
+                            },
+                          })
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "author",
+                                model: "User",
+                              },
+                            },
+                          })
+                          .exec((err, transaction) => {
+                            if (err) {
+                              res.sendStatus(500);
+                            } else {
+                              res.json({
+                                stories: transaction.stories,
+                                sprints: transaction.sprints,
+                              });
+                            }
+                          });
+                      } else {
+                        // CASE 5
+                        Sprint.findById(req.body.story.sprint, function (
+                          err,
+                          newSprint
+                        ) {
                           if (err) {
                             res.sendStatus(500);
                           } else {
-                            res.json({
-                              stories: transaction.stories,
-                              sprints: transaction.sprints,
-                            });
+                            newSprint.stories.push(story._id);
+                            newSprint.save();
+                            Team.findById(team._id)
+                              .populate({
+                                path: "stories",
+                                model: "Story",
+                                populate: {
+                                  path: "author",
+                                  model: "User",
+                                },
+                              })
+                              .populate({
+                                path: "stories",
+                                model: "Story",
+                                populate: {
+                                  path: "sprint",
+                                  model: "Sprint",
+                                },
+                              })
+                              .populate({
+                                path: "stories",
+                                model: "Story",
+                                populate: {
+                                  path: "assigned",
+                                  model: "User",
+                                },
+                              })
+                              .populate("members")
+                              .populate({
+                                path: "sprints",
+                                model: "Sprint",
+                                populate: {
+                                  path: "stories",
+                                  model: "Story",
+                                  populate: {
+                                    path: "assigned",
+                                    model: "User",
+                                  },
+                                },
+                              })
+                              .populate({
+                                path: "sprints",
+                                model: "Sprint",
+                                populate: {
+                                  path: "stories",
+                                  model: "Story",
+                                  populate: {
+                                    path: "author",
+                                    model: "User",
+                                  },
+                                },
+                              })
+                              .exec((err, transaction) => {
+                                if (err) {
+                                  res.sendStatus(500);
+                                } else {
+                                  res.json({
+                                    stories: transaction.stories,
+                                    sprints: transaction.sprints,
+                                  });
+                                }
+                              });
                           }
                         });
+                      }
                     }
-                  }
-                });
+                  });
+                }
               }
-            });
-          }
+            }
+          });
         }
       });
     }
@@ -743,3 +1062,63 @@ app.get("/sprint/:teamId", function (req, res) {
 */
 app.listen(PORT);
 console.log("Backend API server listening on port " + PORT);
+/*Team.findById(team._id)
+                                    .populate({
+                                      path: "stories",
+                                      model: "Story",
+                                      populate: {
+                                        path: "author",
+                                        model: "User",
+                                      },
+                                    })
+                                    .populate({
+                                      path: "stories",
+                                      model: "Story",
+                                      populate: {
+                                        path: "sprint",
+                                        model: "Sprint",
+                                      },
+                                    })
+                                    .populate({
+                                      path: "stories",
+                                      model: "Story",
+                                      populate: {
+                                        path: "assigned",
+                                        model: "User",
+                                      },
+                                    })
+                                    .populate("members")
+                                    .populate({
+                                      path: "sprints",
+                                      model: "Sprint",
+                                      populate: {
+                                        path: "stories",
+                                        model: "Story",
+                                        populate: {
+                                          path: "assigned",
+                                          model: "User",
+                                        },
+                                      },
+                                    })
+                                    .populate({
+                                      path: "sprints",
+                                      model: "Sprint",
+                                      populate: {
+                                        path: "stories",
+                                        model: "Story",
+                                        populate: {
+                                          path: "author",
+                                          model: "User",
+                                        },
+                                      },
+                                    })
+                                    .exec((err, transaction) => {
+                                      if (err) {
+                                        res.sendStatus(500);
+                                      } else {
+                                        res.json({
+                                          stories: transaction.stories,
+                                          sprints: transaction.sprints,
+                                        });
+                                      }
+                                    });*/
