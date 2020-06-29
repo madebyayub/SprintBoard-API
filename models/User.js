@@ -10,6 +10,7 @@ let userSchema = new mongoose.Schema({
       ref: "Team",
     },
   ],
+  leader: Boolean,
 });
 
 module.exports = mongoose.model("User", userSchema);

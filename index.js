@@ -38,6 +38,22 @@ mongoose.connection.on("connected", () => {
 
 */
 
+/* ROUTES ASSOCIATED WITH USER */
+
+// GET ROUTE TO GET USER INFORMATION
+app.patch("/user", function (req, res) {
+  User.findOne({ userID: req.body.userID }, function (err, user) {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      user.profilePic = req.body.userpicture;
+      user.name = req.body.username;
+      user.save();
+      res.json(user);
+    }
+  });
+});
+
 /* ROUTES ASSOCIATED WITH TEAM */
 
 // POST ROUTE TO CREATE A TEAM
@@ -229,6 +245,7 @@ app.patch("/team", function (req, res) {
                 });
                 team.members = newMembers;
                 user.team = [];
+                user.leader = false;
                 user.save((error) => {
                   if (!error) {
                     team.save((error) => {
@@ -250,7 +267,30 @@ app.patch("/team", function (req, res) {
                             populate: { path: "assigned", model: "User" },
                           })
                           .populate("members")
-                          .populate("sprints")
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "assigned",
+                                model: "User",
+                              },
+                            },
+                          })
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "author",
+                                model: "User",
+                              },
+                            },
+                          })
                           .exec((err, transaction) => {
                             if (err) {
                               res.sendStatus(500);
@@ -627,6 +667,18 @@ app.put("/story/:storyId", function (req, res) {
                           },
                         },
                       })
+                      .populate({
+                        path: "sprints",
+                        model: "Sprint",
+                        populate: {
+                          path: "stories",
+                          model: "Story",
+                          populate: {
+                            path: "sprint",
+                            model: "Sprint",
+                          },
+                        },
+                      })
                       .exec((err, transaction) => {
                         if (err) {
                           res.sendStatus(500);
@@ -698,6 +750,18 @@ app.put("/story/:storyId", function (req, res) {
                               },
                             },
                           })
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "sprint",
+                                model: "Sprint",
+                              },
+                            },
+                          })
                           .exec((err, transaction) => {
                             if (err) {
                               res.sendStatus(500);
@@ -762,6 +826,18 @@ app.put("/story/:storyId", function (req, res) {
                         populate: {
                           path: "author",
                           model: "User",
+                        },
+                      },
+                    })
+                    .populate({
+                      path: "sprints",
+                      model: "Sprint",
+                      populate: {
+                        path: "stories",
+                        model: "Story",
+                        populate: {
+                          path: "sprint",
+                          model: "Sprint",
                         },
                       },
                     })
@@ -841,6 +917,18 @@ app.put("/story/:storyId", function (req, res) {
                               },
                             },
                           })
+                          .populate({
+                            path: "sprints",
+                            model: "Sprint",
+                            populate: {
+                              path: "stories",
+                              model: "Story",
+                              populate: {
+                                path: "sprint",
+                                model: "Sprint",
+                              },
+                            },
+                          })
                           .exec((err, transaction) => {
                             if (err) {
                               res.sendStatus(500);
@@ -909,6 +997,18 @@ app.put("/story/:storyId", function (req, res) {
                                   populate: {
                                     path: "author",
                                     model: "User",
+                                  },
+                                },
+                              })
+                              .populate({
+                                path: "sprints",
+                                model: "Sprint",
+                                populate: {
+                                  path: "stories",
+                                  model: "Story",
+                                  populate: {
+                                    path: "sprint",
+                                    model: "Sprint",
                                   },
                                 },
                               })
@@ -1062,63 +1162,3 @@ app.get("/sprint/:teamId", function (req, res) {
 */
 app.listen(PORT);
 console.log("Backend API server listening on port " + PORT);
-/*Team.findById(team._id)
-                                    .populate({
-                                      path: "stories",
-                                      model: "Story",
-                                      populate: {
-                                        path: "author",
-                                        model: "User",
-                                      },
-                                    })
-                                    .populate({
-                                      path: "stories",
-                                      model: "Story",
-                                      populate: {
-                                        path: "sprint",
-                                        model: "Sprint",
-                                      },
-                                    })
-                                    .populate({
-                                      path: "stories",
-                                      model: "Story",
-                                      populate: {
-                                        path: "assigned",
-                                        model: "User",
-                                      },
-                                    })
-                                    .populate("members")
-                                    .populate({
-                                      path: "sprints",
-                                      model: "Sprint",
-                                      populate: {
-                                        path: "stories",
-                                        model: "Story",
-                                        populate: {
-                                          path: "assigned",
-                                          model: "User",
-                                        },
-                                      },
-                                    })
-                                    .populate({
-                                      path: "sprints",
-                                      model: "Sprint",
-                                      populate: {
-                                        path: "stories",
-                                        model: "Story",
-                                        populate: {
-                                          path: "author",
-                                          model: "User",
-                                        },
-                                      },
-                                    })
-                                    .exec((err, transaction) => {
-                                      if (err) {
-                                        res.sendStatus(500);
-                                      } else {
-                                        res.json({
-                                          stories: transaction.stories,
-                                          sprints: transaction.sprints,
-                                        });
-                                      }
-                                    });*/
