@@ -129,6 +129,7 @@ app.post("/team", function (req, res) {
     }
   });
 });
+
 // PATCH ROUTE TO UPDATE TEAM MEMBER INFORMATION
 app.patch("/team", function (req, res) {
   Team.findOne({ name: req.body.teamname }, function (err, team) {
@@ -240,6 +241,27 @@ app.patch("/team", function (req, res) {
                   });
                 }
               } else if (req.body.instruction === "REMOVE") {
+                Story.find({team: team._id}, function(err, stories){
+                  if (err){
+                    res.sendStatus(500);
+                  }
+                  else{
+                    if(!stories){
+                      res.sendStatus(404);
+                    }
+                    else{
+                      stories.map((oneStory) => {
+                        if( oneStory.assigned && oneStory.assigned._id.toString() == user._id){
+                          Story.findByIdAndUpdate(oneStory._id,{assigned: null},function(err){
+                            if (err){
+                              res.sendStatus(500);
+                            }
+                          });
+                        }
+                      });
+                    }
+                  }
+                })
                 let newMembers = team.members.filter((member) => {
                   return member.toString() != user._id;
                 });
