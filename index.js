@@ -53,15 +53,11 @@ app.use(teamRoutes);
 
 // Routes associated with stories
 
-app.use(storyRoutes);
+//app.use(storyRoutes);
 
 // Routes associated with sprints
 
 app.use(sprintRoutes);
-
-/* ROUTES ASSOCIATED WITH TEAM */
-
-/* ROUTES ASSOCIATED WITH STORIES */
 
 // DELETE A STORY, AND REMOVE FROM TEAM ARRAY
 app.delete("/story", function (req, res) {

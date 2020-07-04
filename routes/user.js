@@ -1,9 +1,26 @@
 const express = require("express"),
   router = express.Router(),
+  helper = require("../helper"),
   User = require("../models/User"),
   Team = require("../models/Team"),
   Story = require("../models/Story"),
   Sprint = require("../models/Sprint");
+
+/* Get route for fetching the team of a user. */
+
+router.get("/user/team/:id", function (req, res) {
+  User.findOne({ userID: req.params.id }, function (err, user) {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      if (user) {
+        helper.populateTeam(req, res, user.team);
+      } else {
+        res.json({ team: null });
+      }
+    }
+  });
+});
 
 /* Patch route to update user information upon their login, this
    ensures our application is consistent with the user's google information */

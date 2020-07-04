@@ -1,12 +1,15 @@
 const express = require("express"),
   router = express.Router(),
+  helper = require("../helper"),
   User = require("../models/User"),
   Team = require("../models/Team"),
   Story = require("../models/Story"),
   Sprint = require("../models/Sprint");
 
-// POST ROUTE TO CREATE A TEAM
-app.post("/team", function (req, res) {
+/* Post route to create a new team. Performs a check prior to ensure that a
+   team with that name does not already exist. Responds with a message. */
+
+router.post("/team", function (req, res) {
   User.findOne({ userID: req.body.userID }, function (err, user) {
     if (err) {
       res.sendStatus(500);
@@ -79,8 +82,10 @@ app.post("/team", function (req, res) {
   });
 });
 
-// PATCH ROUTE TO UPDATE TEAM MEMBER INFORMATION
-app.patch("/team", function (req, res) {
+/* Patch route to update team member information. Handles removing and adding a member
+   depending on the instruction provided in the request body. */
+
+router.patch("/team", function (req, res) {
   Team.findOne({ name: req.body.teamname }, function (err, team) {
     if (err) {
       res.sendStatus(500);
@@ -104,31 +109,7 @@ app.patch("/team", function (req, res) {
                   if (!error) {
                     team.save((error) => {
                       if (!error) {
-                        Team.findById(team._id)
-                          .populate({
-                            path: "stories",
-                            model: "Story",
-                            populate: { path: "author", model: "User" },
-                          })
-                          .populate({
-                            path: "stories",
-                            model: "Story",
-                            populate: { path: "sprint", model: "Sprint" },
-                          })
-                          .populate({
-                            path: "stories",
-                            model: "Story",
-                            populate: { path: "assigned", model: "User" },
-                          })
-                          .populate("members")
-                          .populate("sprints")
-                          .exec((err, transaction) => {
-                            if (err) {
-                              res.sendStatus(500);
-                            } else {
-                              res.json({ team: transaction });
-                            }
-                          });
+                        helper.populateTeam(req, res, team._id);
                       } else {
                         res.sendStatus(500);
                       }
@@ -155,31 +136,7 @@ app.patch("/team", function (req, res) {
                     if (!error) {
                       team.save((error) => {
                         if (!error) {
-                          Team.findById(team._id)
-                            .populate({
-                              path: "stories",
-                              model: "Story",
-                              populate: { path: "author", model: "User" },
-                            })
-                            .populate({
-                              path: "stories",
-                              model: "Story",
-                              populate: { path: "sprint", model: "Sprint" },
-                            })
-                            .populate({
-                              path: "stories",
-                              model: "Story",
-                              populate: { path: "assigned", model: "User" },
-                            })
-                            .populate("members")
-                            .populate("sprints")
-                            .exec((err, transaction) => {
-                              if (err) {
-                                res.sendStatus(500);
-                              } else {
-                                res.json({ team: transaction });
-                              }
-                            });
+                          helper.populateTeam(req, res, team._id);
                         } else {
                           res.sendStatus(500);
                         }
@@ -226,54 +183,7 @@ app.patch("/team", function (req, res) {
                   if (!error) {
                     team.save((error) => {
                       if (!error) {
-                        Team.findById(team._id)
-                          .populate({
-                            path: "stories",
-                            model: "Story",
-                            populate: { path: "author", model: "User" },
-                          })
-                          .populate({
-                            path: "stories",
-                            model: "Story",
-                            populate: { path: "sprint", model: "Sprint" },
-                          })
-                          .populate({
-                            path: "stories",
-                            model: "Story",
-                            populate: { path: "assigned", model: "User" },
-                          })
-                          .populate("members")
-                          .populate({
-                            path: "sprints",
-                            model: "Sprint",
-                            populate: {
-                              path: "stories",
-                              model: "Story",
-                              populate: {
-                                path: "assigned",
-                                model: "User",
-                              },
-                            },
-                          })
-                          .populate({
-                            path: "sprints",
-                            model: "Sprint",
-                            populate: {
-                              path: "stories",
-                              model: "Story",
-                              populate: {
-                                path: "author",
-                                model: "User",
-                              },
-                            },
-                          })
-                          .exec((err, transaction) => {
-                            if (err) {
-                              res.sendStatus(500);
-                            } else {
-                              res.json({ team: transaction });
-                            }
-                          });
+                        helper.populateTeam(req, res, team._id);
                       } else {
                         res.sendStatus(500);
                       }
@@ -293,68 +203,17 @@ app.patch("/team", function (req, res) {
   });
 });
 
-router.get("/team/user/:id", function (req, res) {
-  User.findOne({ userID: req.params.id }, function (err, user) {
+/* Route responsible for a fetch given a team name. Client side uses this response
+   to determine if a team already exists with the given name. Does not require population. */
+
+router.get("/team/:name", function (req, res) {
+  Team.find({ name: req.params.name }).exec((err, transaction) => {
     if (err) {
       res.sendStatus(500);
     } else {
-      if (user) {
-        Team.findById(user.team)
-          .populate({
-            path: "stories",
-            model: "Story",
-            populate: { path: "author", model: "User" },
-          })
-          .populate({
-            path: "stories",
-            model: "Story",
-            populate: { path: "sprint", model: "Sprint" },
-          })
-          .populate({
-            path: "stories",
-            model: "Story",
-            populate: { path: "assigned", model: "User" },
-          })
-          .populate("members")
-          .populate("sprints")
-          .exec((err, transaction) => {
-            if (err) {
-              res.sendStatus(500);
-            } else {
-              res.json({ team: transaction });
-            }
-          });
-      } else {
-        res.json({ team: null });
-      }
+      res.json(transaction);
     }
   });
 });
-// GET ROUTE TO GET A MATCH FOR A TEAM NAME PROVIDED BY ROUTE PARAMS
-app.get("/team/:name", function (req, res) {
-  Team.find({ name: req.params.name })
-    .populate({
-      path: "stories",
-      model: "Story",
-      populate: { path: "author", model: "User" },
-    })
-    .populate({
-      path: "stories",
-      model: "Story",
-      populate: { path: "sprint", model: "Sprint" },
-    })
-    .populate({
-      path: "stories",
-      model: "Story",
-      populate: { path: "assigned", model: "User" },
-    })
-    .populate("members")
-    .populate("sprints")
-    .exec((err, transaction) => {
-      if (err) {
-        res.sendStatus(500);
-      } else {
-        res.json(transaction);
-      }
-    });
-});
+
+module.exports = router;
