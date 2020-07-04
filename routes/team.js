@@ -24,11 +24,11 @@ router.post("/team", function (req, res) {
                 userID: req.body.userID,
                 name: req.body.username,
                 profilePic: req.body.userpicture,
+                leader: true,
               });
               const newTeam = new Team({
                 name: req.body.teamname,
                 members: [newUser],
-                lead: newUser,
                 stories: [],
                 sprints: [],
               });
@@ -57,6 +57,7 @@ router.post("/team", function (req, res) {
                   stories: [],
                   sprints: [],
                 });
+                user.leader = true;
                 user.team = newTeam;
                 user.save((error) => {
                   if (!error) {

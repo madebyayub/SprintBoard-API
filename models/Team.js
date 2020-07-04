@@ -8,10 +8,6 @@ let teamSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
-  lead: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
   stories: [
     {
       type: mongoose.Schema.Types.ObjectId,
