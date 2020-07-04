@@ -73,6 +73,18 @@ helper.populateTeam = function (req, res, ref) {
         },
       },
     })
+    .populate({
+      path: "sprints",
+      model: "Sprint",
+      populate: {
+        path: "stories",
+        model: "Story",
+        populate: {
+          path: "sprint",
+          model: "Sprint",
+        },
+      },
+    })
     .exec((err, transaction) => {
       if (err) {
         res.sendStatus(500);
