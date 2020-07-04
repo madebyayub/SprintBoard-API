@@ -82,23 +82,37 @@ router.post("/team", function (req, res) {
   });
 });
 
-/* Patch route to update team member information. Handles removing and adding a member
-   depending on the instruction provided in the request body. */
+/* Patch route to update team information. Handles removing and adding a member
+   and updating team name, depending on the instruction provided in the request body. */
 
 router.patch("/team", function (req, res) {
   Team.findOne({ name: req.body.teamname }, function (err, team) {
     if (err) {
       res.sendStatus(500);
     } else {
-      User.findOne({ userID: req.body.userID }, function (err, user) {
-        if (err) {
-          res.sendStatus(500);
-        } else {
-          if (!user) {
-            if (!team) {
-              res.status(404).send("Team not found");
+      if (!team) {
+        res.sendStatus(404);
+      } else {
+        // If the instruction is to just change name
+        if (req.body.instruction === "CHANGE_NAME") {
+          team.name = req.body.newTeamName;
+          team.save((error) => {
+            if (!error) {
+              helper.populateTeam(req, res, team._id);
             } else {
-              if (req.body.instruction === "ADD") {
+              res.sendStatus(500);
+            }
+          });
+          // If the instruction is either add or remove
+        } else if (
+          req.body.instruction === "ADD" ||
+          req.body.instruction === "REMOVE"
+        ) {
+          User.findOne({ userID: req.body.userID }, function (err, user) {
+            // If the instruction is add a user
+            if (req.body.instruction === "ADD") {
+              // If the user is new, and requests to join a team
+              if (!user) {
                 const newUser = new User({
                   userID: req.body.userID,
                   name: req.body.username,
@@ -118,15 +132,8 @@ router.patch("/team", function (req, res) {
                     res.sendStatus(500);
                   }
                 });
+                // If the user already exists, and is not part of a team
               } else {
-                res.sendStatus(404);
-              }
-            }
-          } else {
-            if (!team) {
-              res.status(404).send("Team not found");
-            } else {
-              if (req.body.instruction === "ADD") {
                 if (user.team.length > 0) {
                   res.json(user.team[0]);
                 } else {
@@ -146,59 +153,60 @@ router.patch("/team", function (req, res) {
                     }
                   });
                 }
-              } else if (req.body.instruction === "REMOVE") {
-                Story.find({ team: team._id }, function (err, stories) {
-                  if (err) {
-                    res.sendStatus(500);
+              }
+              // If the instruction is to remove a member of a team
+            } else {
+              Story.find({ team: team._id }, function (err, stories) {
+                if (err) {
+                  res.sendStatus(500);
+                } else {
+                  if (!stories) {
+                    res.sendStatus(404);
                   } else {
-                    if (!stories) {
-                      res.sendStatus(404);
-                    } else {
-                      stories.map((oneStory) => {
-                        if (
-                          oneStory.assigned &&
-                          oneStory.assigned._id.toString() == user._id
-                        ) {
-                          Story.findByIdAndUpdate(
-                            oneStory._id,
-                            { assigned: null },
-                            function (err) {
-                              if (err) {
-                                res.sendStatus(500);
-                              }
+                    stories.map((oneStory) => {
+                      if (
+                        oneStory.assigned &&
+                        oneStory.assigned._id.toString() == user._id
+                      ) {
+                        Story.findByIdAndUpdate(
+                          oneStory._id,
+                          { assigned: null },
+                          function (err) {
+                            if (err) {
+                              res.sendStatus(500);
                             }
-                          );
-                        }
-                      });
-                    }
-                  }
-                });
-                let newMembers = team.members.filter((member) => {
-                  return member.toString() != user._id;
-                });
-                team.members = newMembers;
-                user.team = [];
-                user.leader = false;
-                user.save((error) => {
-                  if (!error) {
-                    team.save((error) => {
-                      if (!error) {
-                        helper.populateTeam(req, res, team._id);
-                      } else {
-                        res.sendStatus(500);
+                          }
+                        );
                       }
                     });
-                  } else {
-                    res.sendStatus(500);
                   }
-                });
-              } else {
-                res.sendStatus(404);
-              }
+                }
+              });
+              let newMembers = team.members.filter((member) => {
+                return member.toString() != user._id;
+              });
+              team.members = newMembers;
+              user.team = [];
+              user.leader = false;
+              user.save((error) => {
+                if (!error) {
+                  team.save((error) => {
+                    if (!error) {
+                      helper.populateTeam(req, res, team._id);
+                    } else {
+                      res.sendStatus(500);
+                    }
+                  });
+                } else {
+                  res.sendStatus(500);
+                }
+              });
             }
-          }
+          });
+        } else {
+          res.sendStatus(404);
         }
-      });
+      }
     }
   });
 });

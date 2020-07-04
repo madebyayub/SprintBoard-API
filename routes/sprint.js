@@ -53,12 +53,71 @@ router.post("/sprint", function (req, res) {
                   }
                 });
               }
+            } else {
+              res.sendStatus(404);
             }
           }
         );
       }
     }
   });
+});
+
+/* DELETE route to delete a sprint */
+
+router.delete("/sprint", function (req, res) {
+  Team.findById(req.body.teamId)
+    .populate("stories")
+    .exec(function (err, team) {
+      if (err) {
+        res.sendStatus(500);
+      } else {
+        if (!team) {
+          res.sendStatus(404);
+        } else {
+          Sprint.findById(req.body.sprintId, function (err, sprint) {
+            if (err) {
+              res.sendStatus(500);
+            } else {
+              if (!sprint) {
+                res.sendStatus(404);
+              } else {
+                const filteredSprints = team.sprints.filter((onesprint) => {
+                  return onesprint._id.toString() !== sprint._id.toString();
+                });
+                const filteredStories = team.stories.filter((story) => {
+                  return story.sprint.toString() !== sprint._id.toString();
+                });
+                Story.deleteMany({ sprint: sprint._id }, (err, stories) => {
+                  if (err) {
+                    res.sendStatus(500);
+                  } else {
+                    Sprint.findByIdAndDelete(
+                      sprint._id,
+                      (err, deletedsprint) => {
+                        if (err) {
+                          res.sendStatus(500);
+                        } else {
+                          team.stories = filteredStories;
+                          team.sprints = filteredSprints;
+                          team.save((err) => {
+                            if (err) {
+                              res.sendStatus(500);
+                            } else {
+                              helper.populateTeam(req, res, team._id);
+                            }
+                          });
+                        }
+                      }
+                    );
+                  }
+                });
+              }
+            }
+          });
+        }
+      }
+    });
 });
 
 /* GET route to fetch all the sprints of a team */
