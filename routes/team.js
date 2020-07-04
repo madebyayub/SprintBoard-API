@@ -211,7 +211,7 @@ router.patch("/team", function (req, res) {
   });
 });
 
-/* Route responsible for a fetch given a team name. Client side uses this response
+/* GET route responsible for a fetch given a team name. Client side uses this response
    to determine if a team already exists with the given name. Does not require population. */
 
 router.get("/team/:name", function (req, res) {
@@ -220,6 +220,50 @@ router.get("/team/:name", function (req, res) {
       res.sendStatus(500);
     } else {
       res.json(transaction);
+    }
+  });
+});
+
+/* DELETE route responsible for deleting a team if the last member leaves. */
+
+router.delete("/team", function (req, res) {
+  Team.findById(req.body.teamId, function (err, team) {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      if (!team) {
+        res.sendStatus(404);
+      } else {
+        Sprint.deleteMany({ team: team._id }, (err, sprints) => {
+          if (err) {
+            res.sendStatus(500);
+          } else {
+            Story.deleteMany({ team: team._id }, (err, stories) => {
+              if (err) {
+                res.sendStatus(500);
+              } else {
+                User.findOne({ userID: req.body.userID }, function (err, user) {
+                  user.team = [];
+                  user.leader = false;
+                  user.save((error) => {
+                    if (!error) {
+                      Team.findByIdAndDelete(team._id, function (err, delteam) {
+                        if (err) {
+                          res.sendStatus(500);
+                        } else {
+                          res.json({ team: null });
+                        }
+                      });
+                    } else {
+                      res.sendStatus(500);
+                    }
+                  });
+                });
+              }
+            });
+          }
+        });
+      }
     }
   });
 });
