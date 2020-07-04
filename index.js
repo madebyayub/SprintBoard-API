@@ -1,7 +1,7 @@
 /* 
   Backend API initialization 
 */
-var express = require("express"),
+const express = require("express"),
   cors = require("cors"),
   mongoose = require("mongoose"),
   bp = require("body-parser"),
@@ -10,6 +10,11 @@ var express = require("express"),
   Story = require("./models/Story"),
   Sprint = require("./models/Sprint"),
   app = express();
+
+const teamRoutes = require("./routes/team"),
+  storyRoutes = require("./routes/story"),
+  userRoutes = require("./routes/user"),
+  sprintRoutes = require("./routes/sprint");
 
 app.use(cors());
 app.use(bp.json());
@@ -39,6 +44,8 @@ mongoose.connection.on("connected", () => {
 */
 
 /* ROUTES ASSOCIATED WITH USER */
+
+app.use(userRoutes);
 
 // GET ROUTE TO GET USER INFORMATION
 app.patch("/user", function (req, res) {
@@ -241,27 +248,32 @@ app.patch("/team", function (req, res) {
                   });
                 }
               } else if (req.body.instruction === "REMOVE") {
-                Story.find({team: team._id}, function(err, stories){
-                  if (err){
+                Story.find({ team: team._id }, function (err, stories) {
+                  if (err) {
                     res.sendStatus(500);
-                  }
-                  else{
-                    if(!stories){
+                  } else {
+                    if (!stories) {
                       res.sendStatus(404);
-                    }
-                    else{
+                    } else {
                       stories.map((oneStory) => {
-                        if( oneStory.assigned && oneStory.assigned._id.toString() == user._id){
-                          Story.findByIdAndUpdate(oneStory._id,{assigned: null},function(err){
-                            if (err){
-                              res.sendStatus(500);
+                        if (
+                          oneStory.assigned &&
+                          oneStory.assigned._id.toString() == user._id
+                        ) {
+                          Story.findByIdAndUpdate(
+                            oneStory._id,
+                            { assigned: null },
+                            function (err) {
+                              if (err) {
+                                res.sendStatus(500);
+                              }
                             }
-                          });
+                          );
                         }
                       });
                     }
                   }
-                })
+                });
                 let newMembers = team.members.filter((member) => {
                   return member.toString() != user._id;
                 });
