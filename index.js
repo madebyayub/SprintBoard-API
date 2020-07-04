@@ -11,6 +11,11 @@ const express = require("express"),
   Sprint = require("./models/Sprint"),
   app = express();
 
+const teamRoutes = require("./routes/team"),
+  storyRoutes = require("./routes/story"),
+  userRoutes = require("./routes/user"),
+  sprintRoutes = require("./routes/sprint");
+
 app.use(cors());
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
