@@ -86,7 +86,7 @@ router.delete("/sprint", function (req, res) {
                   return onesprint._id.toString() !== sprint._id.toString();
                 });
                 const filteredStories = team.stories.filter((story) => {
-                  return story.sprint.toString() !== sprint._id.toString();
+                  return !story.sprint || story.sprint.toString() !== sprint._id.toString();
                 });
                 Story.deleteMany({ sprint: sprint._id }, (err, stories) => {
                   if (err) {
