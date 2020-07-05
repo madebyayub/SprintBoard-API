@@ -187,21 +187,47 @@ router.patch("/team", function (req, res) {
                 return member.toString() != user._id;
               });
               team.members = newMembers;
-              user.team = [];
-              user.leader = false;
-              user.save((error) => {
-                if (!error) {
-                  team.save((error) => {
-                    if (!error) {
-                      helper.populateTeam(req, res, team._id);
-                    } else {
-                      res.sendStatus(500);
-                    }
-                  });
-                } else {
-                  res.sendStatus(500);
-                }
-              });
+              if (user.leader) {
+                user.team = [];
+                user.leader = false;
+                user.save((error) => {
+                  if (err) {
+                    res.sendStatus(500);
+                  } else {
+                    User.findById(newMembers[0], function (err, newLeader) {
+                      newLeader.leader = true;
+                      newLeader.save((err) => {
+                        if (err) {
+                          res.sendStatus(500);
+                        } else {
+                          team.save((error) => {
+                            if (!error) {
+                              helper.populateTeam(req, res, team._id);
+                            } else {
+                              res.sendStatus(500);
+                            }
+                          });
+                        }
+                      });
+                    });
+                  }
+                });
+              } else {
+                user.team = [];
+                user.save((error) => {
+                  if (!error) {
+                    team.save((error) => {
+                      if (!error) {
+                        helper.populateTeam(req, res, team._id);
+                      } else {
+                        res.sendStatus(500);
+                      }
+                    });
+                  } else {
+                    res.sendStatus(500);
+                  }
+                });
+              }
             }
           });
         } else {
