@@ -3,14 +3,16 @@
 */
 const express = require("express"),
   cors = require("cors"),
-  socketio = require ("socket.io"),
+  socketio = require("socket.io"),
   mongoose = require("mongoose"),
   bp = require("body-parser"),
-  http = require('http'),
+  http = require("http"),
   User = require("./models/User"),
   Team = require("./models/Team"),
   Story = require("./models/Story"),
   Sprint = require("./models/Sprint"),
+  Channel = require("./models/Channel"),
+  Message = require("./models/Message"),
   app = express(),
   server = http.createServer(app),
   io = socketio(server);
@@ -19,7 +21,6 @@ const teamRoutes = require("./routes/team"),
   storyRoutes = require("./routes/story"),
   userRoutes = require("./routes/user"),
   sprintRoutes = require("./routes/sprint");
-const { Socket } = require("dgram");
 
 app.use(cors());
 app.use(bp.json());
@@ -42,17 +43,20 @@ mongoose.connection.on("connected", () => {
   console.log("Connected to Mongoose Database");
 });
 
-io.on('connection', (socket) =>{
-  console.log('we got socket connected');
+io.on("connection", (socket) => {
+  console.log("A client socket has connected");
 
-  socket.on('join', ({message}) => {
-    console.log(message);
-  })
-  socket.on('disconnect', () => {
-    console.log('user has left the chat');
-  })
+  socket.on("join", ({ user, msg, channel }) => {
+    console.log(user.name + msg);
+  });
 
-})
+  socket.on("message", ({ user, msg }) => {
+    console.log(user.name + ": " + msg);
+  });
+  socket.on("disconnect", () => {
+    console.log("A user has left the chat");
+  });
+});
 
 /*
 
