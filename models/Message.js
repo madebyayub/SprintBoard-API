@@ -6,7 +6,7 @@ let messageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
-  date: moment().format(),
+  date: String,
   content: String,
 });
 
