@@ -7,6 +7,7 @@ const express = require("express"),
   mongoose = require("mongoose"),
   bp = require("body-parser"),
   http = require("http"),
+  moment = require("moment"),
   User = require("./models/User"),
   Team = require("./models/Team"),
   Story = require("./models/Story"),
@@ -52,6 +53,11 @@ io.on("connection", (socket) => {
 
   socket.on("message", ({ user, msg }) => {
     console.log(user.name + ": " + msg);
+    socket.broadcast.emit("message", {
+      author: user,
+      date: moment(),
+      content: msg,
+    });
   });
   socket.on("disconnect", () => {
     console.log("A user has left the chat");
