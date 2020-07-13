@@ -11,6 +11,12 @@ let userSchema = new mongoose.Schema({
     },
   ],
   leader: Boolean,
+  channels: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Channel",
+    }
+  ],
 });
 
 module.exports = mongoose.model("User", userSchema);

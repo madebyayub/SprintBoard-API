@@ -51,13 +51,42 @@ io.on("connection", (socket) => {
     console.log(user.name + msg);
   });
 
-  socket.on("message", ({ user, msg }) => {
+  socket.on("message", ({ user, msg, channel }) => {
     console.log(user.name + ": " + msg);
     socket.broadcast.emit("message", {
       author: user,
       date: moment(),
       content: msg,
+
     });
+    User.findOne({userID: user.userID}, function(err,foundUser){
+      if (!err){
+        if(foundUser){
+          Message.create({author: foundUser, date: moment(), content: msg}, function(err, newMessage){
+              if (!err){
+                  Channel.findById(channel._id, function(err, userChannel){
+                    if (!err){
+                      if (userChannel){
+                         userChannel.messages.push(newMessage);
+                         userChannel.save();
+                      }
+                      else{
+                        //do error checks
+                      }
+                    }
+                    else{
+                      //do error checks 
+                    }
+                  });
+                }
+                else{
+                  //do error check
+                }
+          });
+        }
+      }
+    });
+
   });
   socket.on("disconnect", () => {
     console.log("A user has left the chat");
