@@ -66,6 +66,7 @@ helper.populateTeam = function (req, res, ref) {
       populate: { path: "assigned", model: "User" },
     })
     .populate("members")
+    .populate("channel")
     .populate({
       path: "sprints",
       model: "Sprint",

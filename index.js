@@ -47,12 +47,11 @@ mongoose.connection.on("connected", () => {
 });
 
 io.on("connection", (socket) => {
-  console.log("A client socket has connected");
-
-  socket.on("join", ({ user, msg, channel }) => {
-    console.log(user.name + msg);
+  socket.on("join", ({ user, channel }) => {
+    console.log(
+      user.name + " has joined the message board, in channel " + channel.name
+    );
   });
-
   socket.on("populateChannel", ({ channel }) => {
     Channel.findById(channel)
       .populate({
@@ -70,8 +69,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("message", ({ user, msg, channel }) => {
-    console.log(user.name + ": " + msg);
-    console.log(channel);
     socket.broadcast.emit("message", {
       author: user,
       date: moment(),
