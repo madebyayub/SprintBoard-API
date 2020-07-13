@@ -33,7 +33,19 @@ router.patch("/user", function (req, res) {
       user.profilePic = req.body.userpicture;
       user.name = req.body.username;
       user.save();
-      res.json(user);
+      helper.populateUser(req, res, user._id);
+    }
+  });
+});
+
+/* Get route to fetch user information upon their login */
+
+router.get("/user/:id", function (req, res) {
+  User.findOne({ userID: req.params.id }, function (err, user) {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      helper.populateUser(req, res, user._id);
     }
   });
 });

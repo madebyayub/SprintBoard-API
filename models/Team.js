@@ -20,6 +20,10 @@ let teamSchema = new mongoose.Schema({
       ref: "Sprint",
     },
   ],
+  channel: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Channel",
+  },
 });
 
 module.exports = mongoose.model("Team", teamSchema);

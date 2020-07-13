@@ -22,6 +22,8 @@ const teamRoutes = require("./routes/team"),
   storyRoutes = require("./routes/story"),
   userRoutes = require("./routes/user"),
   sprintRoutes = require("./routes/sprint");
+const helper = require("./helper");
+const { trace } = require("console");
 
 app.use(cors());
 app.use(bp.json());
@@ -51,42 +53,57 @@ io.on("connection", (socket) => {
     console.log(user.name + msg);
   });
 
+  socket.on("populateChannel", ({ channel }) => {
+    Channel.findById(channel)
+      .populate({
+        path: "messages",
+        model: "Message",
+        populate: { path: "author", model: "User" },
+      })
+      .populate({
+        path: "members",
+        model: "User",
+      })
+      .exec((err, transaction) => {
+        io.to(`${socket.id}`).emit("receiveChannel", { channel: transaction });
+      });
+  });
+
   socket.on("message", ({ user, msg, channel }) => {
     console.log(user.name + ": " + msg);
+    console.log(channel);
     socket.broadcast.emit("message", {
       author: user,
       date: moment(),
       content: msg,
-
     });
-    User.findOne({userID: user.userID}, function(err,foundUser){
-      if (!err){
-        if(foundUser){
-          Message.create({author: foundUser, date: moment(), content: msg}, function(err, newMessage){
-              if (!err){
-                  Channel.findById(channel._id, function(err, userChannel){
-                    if (!err){
-                      if (userChannel){
-                         userChannel.messages.push(newMessage);
-                         userChannel.save();
-                      }
-                      else{
-                        //do error checks
-                      }
+    User.findOne({ userID: user.userID }, function (err, foundUser) {
+      if (!err) {
+        if (foundUser) {
+          Message.create(
+            { author: foundUser, date: moment(), content: msg },
+            function (err, newMessage) {
+              if (!err) {
+                Channel.findById(channel, function (err, userChannel) {
+                  if (!err) {
+                    if (userChannel) {
+                      userChannel.messages.push(newMessage);
+                      userChannel.save();
+                    } else {
+                      //do error checks
                     }
-                    else{
-                      //do error checks 
-                    }
-                  });
-                }
-                else{
-                  //do error check
-                }
-          });
+                  } else {
+                    //do error checks
+                  }
+                });
+              } else {
+                //do error check
+              }
+            }
+          );
         }
       }
     });
-
   });
   socket.on("disconnect", () => {
     console.log("A user has left the chat");

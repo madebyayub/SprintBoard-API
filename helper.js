@@ -1,7 +1,8 @@
 const User = require("./models/User"),
   Team = require("./models/Team"),
   Story = require("./models/Story"),
-  Sprint = require("./models/Sprint");
+  Sprint = require("./models/Sprint"),
+  Channel = require("./models/Channel");
 
 const helper = {};
 
@@ -27,6 +28,22 @@ helper.populateSprint = function (req, res, ref) {
         res.sendStatus(500);
       } else {
         res.json(transaction);
+      }
+    });
+};
+
+helper.populateUser = function (req, res, ref) {
+  User.findById(ref)
+    .populate({
+      path: "channels",
+      model: "Channel",
+      populate: { path: "messages", model: "Message" },
+    })
+    .exec((err, transaction) => {
+      if (err) {
+        res.sendStatus(500);
+      } else {
+        res.json({ user: transaction });
       }
     });
 };

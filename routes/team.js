@@ -4,7 +4,8 @@ const express = require("express"),
   User = require("../models/User"),
   Team = require("../models/Team"),
   Story = require("../models/Story"),
-  Sprint = require("../models/Sprint");
+  Sprint = require("../models/Sprint"),
+  Channel = require("../models/Channel");
 
 /* Post route to create a new team. Performs a check prior to ensure that a
    team with that name does not already exist. Responds with a message. */
@@ -20,58 +21,88 @@ router.post("/team", function (req, res) {
             res.sendStatus(500);
           } else {
             if (!user) {
-              const newUser = new User({
-                userID: req.body.userID,
-                name: req.body.username,
-                profilePic: req.body.userpicture,
-                leader: true,
-              });
-              const newTeam = new Team({
-                name: req.body.teamname,
-                members: [newUser],
-                stories: [],
-                sprints: [],
-              });
-              newUser.team = newTeam;
-              newUser.save((error) => {
-                if (!error) {
-                  newTeam.save((error) => {
-                    if (!error) {
-                      res.json({ response: "Succesfully saved new team" });
-                    } else {
-                      res.sendStatus(500);
-                    }
-                  });
-                } else {
-                  res.sendStatus(500);
-                }
-              });
-            } else {
-              if (user.team.length > 0) {
-                res.json({ response: "User is already apart of another team" });
-              } else {
-                const newTeam = new Team({
+              Channel.create(
+                {
                   name: req.body.teamname,
-                  members: [user],
-                  lead: user,
-                  stories: [],
-                  sprints: [],
-                });
-                user.leader = true;
-                user.team = newTeam;
-                user.save((error) => {
-                  if (!error) {
-                    newTeam.save((error) => {
+                  messages: [],
+                  members: [newUser._id],
+                },
+                function (err, newChannel) {
+                  if (err) {
+                    res.sendStatus(500);
+                  } else {
+                    const newUser = new User({
+                      userID: req.body.userID,
+                      name: req.body.username,
+                      profilePic: req.body.userpicture,
+                      leader: true,
+                      channels: [newChannel._id],
+                    });
+                    const newTeam = new Team({
+                      name: req.body.teamname,
+                      members: [newUser],
+                      stories: [],
+                      sprints: [],
+                      channel: newChannel._id,
+                    });
+                    newUser.team = newTeam;
+                    newUser.save((error) => {
                       if (!error) {
-                        res.json({ response: "Succesfully saved new team" });
+                        newTeam.save((error) => {
+                          if (!error) {
+                            res.json({
+                              response: "Succesfully saved new team",
+                            });
+                          } else {
+                            res.sendStatus(500);
+                          }
+                        });
                       } else {
                         res.sendStatus(500);
                       }
                     });
-                  } else {
-                    res.sendStatus(500);
                   }
-                });
+                }
+              );
+            } else {
+              if (user.team.length > 0) {
+                res.json({ response: "User is already apart of another team" });
+              } else {
+                Channel.create(
+                  {
+                    name: req.body.teamname,
+                    messages: [],
+                    members: [user._id],
+                  },
+                  function (err, newChannel) {
+                    const newTeam = new Team({
+                      name: req.body.teamname,
+                      members: [user],
+                      lead: user,
+                      stories: [],
+                      sprints: [],
+                      channel: newChannel._id,
+                    });
+                    user.leader = true;
+                    user.team = newTeam;
+                    user.channels = [...user.channels, newChannel];
+                    user.save((error) => {
+                      if (!error) {
+                        newTeam.save((error) => {
+                          if (!error) {
+                            res.json({
+                              response: "Succesfully saved new team",
+                            });
+                          } else {
+                            res.sendStatus(500);
+                          }
+                        });
+                      } else {
+                        res.sendStatus(500);
+                      }
+                    });
+                  }
+                );
               }
             }
           }
@@ -110,121 +141,183 @@ router.patch("/team", function (req, res) {
           req.body.instruction === "REMOVE"
         ) {
           User.findOne({ userID: req.body.userID }, function (err, user) {
-            // If the instruction is add a user
-            if (req.body.instruction === "ADD") {
-              // If the user is new, and requests to join a team
-              if (!user) {
-                const newUser = new User({
-                  userID: req.body.userID,
-                  name: req.body.username,
-                });
-                newUser.team = team;
-                team.members = [...team.members, newUser];
-                newUser.save((error) => {
-                  if (!error) {
-                    team.save((error) => {
-                      if (!error) {
-                        helper.populateTeam(req, res, team._id);
-                      } else {
-                        res.sendStatus(500);
-                      }
-                    });
-                  } else {
-                    res.sendStatus(500);
-                  }
-                });
-                // If the user already exists, and is not part of a team
-              } else {
-                if (user.team.length > 0) {
-                  res.json(user.team[0]);
-                } else {
-                  team.members = [...team.members, user];
-                  user.team = team;
-                  user.save((error) => {
-                    if (!error) {
-                      team.save((error) => {
-                        if (!error) {
-                          helper.populateTeam(req, res, team._id);
-                        } else {
-                          res.sendStatus(500);
-                        }
-                      });
-                    } else {
-                      res.sendStatus(500);
-                    }
-                  });
-                }
-              }
-              // If the instruction is to remove a member of a team
+            if (err) {
+              res.sendStatus(500);
             } else {
-              Story.find({ team: team._id }, function (err, stories) {
-                if (err) {
-                  res.sendStatus(500);
-                } else {
-                  if (!stories) {
-                    res.sendStatus(404);
-                  } else {
-                    stories.map((oneStory) => {
-                      if (
-                        oneStory.assigned &&
-                        oneStory.assigned._id.toString() == user._id
-                      ) {
-                        Story.findByIdAndUpdate(
-                          oneStory._id,
-                          { assigned: null },
-                          function (err) {
-                            if (err) {
-                              res.sendStatus(500);
-                            }
-                          }
-                        );
-                      }
-                    });
-                  }
-                }
-              });
-              let newMembers = team.members.filter((member) => {
-                return member.toString() != user._id;
-              });
-              team.members = newMembers;
-              if (user.leader) {
-                user.team = [];
-                user.leader = false;
-                user.save((error) => {
+              // If the instruction is add a user
+              if (req.body.instruction === "ADD") {
+                Channel.findById(team.channel, function (err, channel) {
                   if (err) {
                     res.sendStatus(500);
                   } else {
-                    User.findById(newMembers[0], function (err, newLeader) {
-                      newLeader.leader = true;
-                      newLeader.save((err) => {
-                        if (err) {
-                          res.sendStatus(500);
-                        } else {
-                          team.save((error) => {
+                    // If the user is new, and requests to join a team
+                    if (!user) {
+                      const newUser = new User({
+                        userID: req.body.userID,
+                        name: req.body.username,
+                        profilePic: req.body.userpicture,
+                        leader: false,
+                        channels: [channel._id],
+                      });
+                      newUser.team = team;
+                      team.members = [...team.members, newUser];
+                      channel.members = [...channel.members, newUser];
+                      newUser.save((error) => {
+                        if (!error) {
+                          channel.save((error) => {
                             if (!error) {
-                              helper.populateTeam(req, res, team._id);
+                              team.save((error) => {
+                                if (!error) {
+                                  helper.populateTeam(req, res, team._id);
+                                } else {
+                                  res.sendStatus(500);
+                                }
+                              });
                             } else {
                               res.sendStatus(500);
                             }
                           });
+                        } else {
+                          res.sendStatus(500);
                         }
                       });
-                    });
+                      // If the user already exists, and is not part of a team
+                    } else {
+                      if (user.team.length > 0) {
+                        res.json(user.team[0]);
+                      } else {
+                        team.members = [...team.members, user];
+                        channel.members = [...channel.members, user];
+                        user.team = team;
+                        user.channels = [...user.channels, channel];
+                        user.save((error) => {
+                          if (!error) {
+                            channel.save((error) => {
+                              if (!error) {
+                                team.save((error) => {
+                                  if (!error) {
+                                    helper.populateTeam(req, res, team._id);
+                                  } else {
+                                    res.sendStatus(500);
+                                  }
+                                });
+                              } else {
+                                res.sendStatus(500);
+                              }
+                            });
+                          } else {
+                            res.sendStatus(500);
+                          }
+                        });
+                      }
+                    }
                   }
                 });
+                // If the instruction is to remove a member of a team
               } else {
-                user.team = [];
-                user.save((error) => {
-                  if (!error) {
-                    team.save((error) => {
-                      if (!error) {
-                        helper.populateTeam(req, res, team._id);
-                      } else {
-                        res.sendStatus(500);
-                      }
-                    });
-                  } else {
+                // Reassign the assigned attribute of all the stories assigned to user to null
+                Story.find({ team: team._id }, function (err, stories) {
+                  if (err) {
                     res.sendStatus(500);
+                  } else {
+                    if (!stories) {
+                      res.sendStatus(404);
+                    } else {
+                      stories.map((oneStory) => {
+                        if (
+                          oneStory.assigned &&
+                          oneStory.assigned._id.toString() == user._id
+                        ) {
+                          Story.findByIdAndUpdate(
+                            oneStory._id,
+                            { assigned: null },
+                            function (err) {
+                              if (err) {
+                                res.sendStatus(500);
+                              }
+                            }
+                          );
+                        }
+                      });
+                    }
+                  }
+                });
+                let newMembers = team.members.filter((member) => {
+                  return member.toString() != user._id;
+                });
+                team.members = newMembers;
+                // Remove the team channel from the user's channel list
+                user.channels = user.channels.filter((channel) => {
+                  return channel.toString() !== team.channel._id.toString();
+                });
+                // Remove the user from the team channel's member list
+                Channel.findById(team.channel, function (err, channel) {
+                  if (err) {
+                    res.sendStatus(500);
+                  } else {
+                    if (channel) {
+                      channel.members = channel.members.filter(
+                        (channelUser) => {
+                          return (
+                            channelUser._id.toString() !== user._id.toString()
+                          );
+                        }
+                      );
+                      channel.save((err) => {
+                        if (err) {
+                          res.sendStatus(500);
+                        } else {
+                          if (user.leader) {
+                            user.team = [];
+                            user.leader = false;
+                            user.save((error) => {
+                              if (err) {
+                                res.sendStatus(500);
+                              } else {
+                                User.findById(newMembers[0], function (
+                                  err,
+                                  newLeader
+                                ) {
+                                  newLeader.leader = true;
+                                  newLeader.save((err) => {
+                                    if (err) {
+                                      res.sendStatus(500);
+                                    } else {
+                                      team.save((error) => {
+                                        if (!error) {
+                                          helper.populateTeam(
+                                            req,
+                                            res,
+                                            team._id
+                                          );
+                                        } else {
+                                          res.sendStatus(500);
+                                        }
+                                      });
+                                    }
+                                  });
+                                });
+                              }
+                            });
+                          } else {
+                            user.team = [];
+                            user.save((error) => {
+                              if (!error) {
+                                team.save((error) => {
+                                  if (!error) {
+                                    helper.populateTeam(req, res, team._id);
+                                  } else {
+                                    res.sendStatus(500);
+                                  }
+                                });
+                              } else {
+                                res.sendStatus(500);
+                              }
+                            });
+                          }
+                        }
+                      });
+                    }
                   }
                 });
               }
@@ -272,13 +365,28 @@ router.delete("/team", function (req, res) {
                 User.findOne({ userID: req.body.userID }, function (err, user) {
                   user.team = [];
                   user.leader = false;
+                  user.channels = user.channels.filter((channel) => {
+                    return channel.toString() !== team.channel._id.toString();
+                  });
                   user.save((error) => {
                     if (!error) {
-                      Team.findByIdAndDelete(team._id, function (err, delteam) {
+                      Channel.findByIdAndDelete(team.channel._id, function (
+                        err,
+                        delchannel
+                      ) {
                         if (err) {
                           res.sendStatus(500);
                         } else {
-                          res.json({ team: null });
+                          Team.findByIdAndDelete(team._id, function (
+                            err,
+                            delteam
+                          ) {
+                            if (err) {
+                              res.sendStatus(500);
+                            } else {
+                              res.json({ team: null });
+                            }
+                          });
                         }
                       });
                     } else {
