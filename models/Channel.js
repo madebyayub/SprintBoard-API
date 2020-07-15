@@ -8,12 +8,13 @@ let channelSchema = new mongoose.Schema({
       ref: "Message",
     },
   ],
+  private: Boolean,
   members: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-    }
-  ]
+    },
+  ],
 });
 
 module.exports = mongoose.model("Channel", channelSchema);

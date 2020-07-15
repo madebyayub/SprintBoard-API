@@ -52,21 +52,6 @@ io.on("connection", (socket) => {
       user.name + " has joined the message board, in channel " + channel.name
     );
   });
-  socket.on("populateChannel", ({ channel }) => {
-    Channel.findById(channel)
-      .populate({
-        path: "messages",
-        model: "Message",
-        populate: { path: "author", model: "User" },
-      })
-      .populate({
-        path: "members",
-        model: "User",
-      })
-      .exec((err, transaction) => {
-        io.to(`${socket.id}`).emit("receiveChannel", { channel: transaction });
-      });
-  });
 
   socket.on("message", ({ user, msg, channel }) => {
     socket.broadcast.emit("message", {
@@ -95,6 +80,107 @@ io.on("connection", (socket) => {
                 });
               } else {
                 //do error check
+              }
+            }
+          );
+        }
+      }
+    });
+  });
+  socket.on("populateChannel", ({ channel }) => {
+    Channel.findById(channel)
+      .populate({
+        path: "messages",
+        model: "Message",
+        populate: { path: "author", model: "User" },
+      })
+      .populate({
+        path: "members",
+        model: "User",
+      })
+      .exec((err, transaction) => {
+        io.to(`${socket.id}`).emit("receiveChannel", { channel: transaction });
+      });
+  });
+
+  socket.on("searchChannel", ({ name }) => {
+    Channel.find({ name: name, private: false }, function (err, channels) {
+      if (!err) {
+        io.to(`${socket.id}`).emit("searchChannelResults", {
+          channels: channels,
+        });
+      }
+    });
+  });
+
+  socket.on("joinChannel", ({ channel, user }) => {
+    User.findById(user, function (err, foundUser) {
+      if (!err) {
+        if (foundUser) {
+          Channel.findById(channel, function (err, foundChannel) {
+            if (!err) {
+              if (foundChannel) {
+                foundChannel.members = [...foundChannel.members, foundUser];
+                foundChannel.save((err) => {
+                  if (!err) {
+                    foundUser.channels = [...foundUser.channels, foundChannel];
+                    foundUser.save((err) => {
+                      if (!err) {
+                        User.findById(foundUser._id)
+                          .populate({
+                            path: "channels",
+                            model: "Channel",
+                            populate: { path: "messages", model: "Message" },
+                          })
+                          .exec((err, transaction) => {
+                            if (!err) {
+                              io.to(`${socket.id}`).emit("channelListUpdate", {
+                                user: transaction,
+                                channel: foundChannel,
+                              });
+                            }
+                          });
+                      }
+                    });
+                  }
+                });
+              }
+            }
+          });
+        }
+      }
+    });
+  });
+
+  socket.on("createChannel", ({ name, isPrivate, user }) => {
+    User.findById(user, function (err, user) {
+      if (!err) {
+        if (user) {
+          Channel.create(
+            { name, messages: [], members: [user], private: isPrivate },
+            function (err, channel) {
+              if (!err) {
+                if (channel) {
+                  user.channels = [...user.channels, channel];
+                  user.save((err) => {
+                    if (!err) {
+                      User.findById(user._id)
+                        .populate({
+                          path: "channels",
+                          model: "Channel",
+                          populate: { path: "messages", model: "Message" },
+                        })
+                        .exec((err, transaction) => {
+                          if (!err) {
+                            io.to(`${socket.id}`).emit("channelListUpdate", {
+                              user: transaction,
+                              channel: channel,
+                            });
+                          }
+                        });
+                    }
+                  });
+                }
               }
             }
           );
