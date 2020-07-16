@@ -263,7 +263,7 @@ router.patch("/team", function (req, res) {
                           );
                         }
                       );
-                      channel.update((err) => {
+                      channel.save((err) => {
                         if (err) {
                           res.sendStatus(500);
                         } else {
