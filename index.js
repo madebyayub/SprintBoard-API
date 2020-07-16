@@ -151,7 +151,48 @@ io.on("connection", (socket) => {
       }
     });
   });
-
+  socket.on("leaveChannel", ({ channel, user }) => {
+    User.findById(user, function (err, foundUser) {
+      if (!err) {
+        if (foundUser) {
+          foundUser.channels = foundUser.channels.filter((chan) => {
+            return chan.toString() !== channel.toString();
+          });
+          foundUser.save((err) => {
+            if (!err) {
+              Channel.findById(channel, function (err, foundChan) {
+                if (!err) {
+                  if (foundChan) {
+                    foundChan.members = foundChan.members.filter((member) => {
+                      return member.toString() !== user.toString();
+                    });
+                    foundChan.save((err) => {
+                      if (!err) {
+                        User.findById(user)
+                          .populate({
+                            path: "channels",
+                            model: "Channel",
+                            populate: { path: "messages", model: "Message" },
+                          })
+                          .exec((err, transaction) => {
+                            if (!err) {
+                              io.to(`${socket.id}`).emit("channelListUpdate", {
+                                user: transaction,
+                                channel: transaction.channels[0],
+                              });
+                            }
+                          });
+                      }
+                    });
+                  }
+                }
+              });
+            }
+          });
+        }
+      }
+    });
+  });
   socket.on("createChannel", ({ name, isPrivate, user }) => {
     User.findById(user, function (err, user) {
       if (!err) {
