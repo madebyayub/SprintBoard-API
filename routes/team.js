@@ -26,6 +26,7 @@ router.post("/team", function (req, res) {
                   name: req.body.teamname,
                   messages: [],
                   members: [newUser._id],
+                  private: true,
                 },
                 function (err, newChannel) {
                   if (err) {
@@ -73,6 +74,7 @@ router.post("/team", function (req, res) {
                     name: req.body.teamname,
                     messages: [],
                     members: [user._id],
+                    private: true,
                   },
                   function (err, newChannel) {
                     const newTeam = new Team({
