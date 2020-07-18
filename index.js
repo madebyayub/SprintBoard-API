@@ -103,6 +103,20 @@ io.on("connection", (socket) => {
       });
   });
 
+  socket.on("searchMember", ({ search }) => {
+    User.find({}, function (err, users) {
+      if (!err) {
+        let matchedUsers = users.filter((user) => {
+          const regex = new RegExp(`^${search}`, "gi");
+          return user.name.match(regex);
+        });
+        io.to(`${socket.id}`).emit("searchMemberResults", {
+          results: matchedUsers,
+        });
+      }
+    });
+  });
+
   socket.on("searchChannel", ({ name }) => {
     Channel.find({ name: name, private: false }, function (err, channels) {
       if (!err) {
