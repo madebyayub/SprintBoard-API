@@ -6,6 +6,8 @@ const express = require("express"),
 /* Get route for fetching the team of a user. */
 
 router.get("/user/team/:id", function (req, res) {
+  res.header("Access-Control-Allow-Origin", "*");
+
   User.findOne({ userID: req.params.id }, function (err, user) {
     if (err) {
       res.sendStatus(500);
@@ -23,6 +25,8 @@ router.get("/user/team/:id", function (req, res) {
    ensures our application is consistent with the user's google information */
 
 router.patch("/user", function (req, res) {
+  res.header("Access-Control-Allow-Origin", "*");
+
   User.findOne({ userID: req.body.userID }, function (err, user) {
     if (err) {
       res.sendStatus(500);
