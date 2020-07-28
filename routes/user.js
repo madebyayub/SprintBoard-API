@@ -39,6 +39,8 @@ router.patch("/user", function (req, res) {
 
 router.get("/user/:id", function (req, res) {
   User.findOne({ userID: req.params.id }, function (err, user) {
+    console.log("happened");
+    res.json("test");
     if (err) {
       res.sendStatus(500);
     } else {
