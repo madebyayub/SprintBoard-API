@@ -21,6 +21,13 @@ router.post("/team", function (req, res) {
             res.sendStatus(500);
           } else {
             if (!user) {
+              const newUser = new User({
+                userID: req.body.userID,
+                name: req.body.username,
+                profilePic: req.body.userpicture,
+                leader: true,
+                channels: [],
+              });
               Channel.create(
                 {
                   name: req.body.teamname,
@@ -32,13 +39,6 @@ router.post("/team", function (req, res) {
                   if (err) {
                     res.sendStatus(500);
                   } else {
-                    const newUser = new User({
-                      userID: req.body.userID,
-                      name: req.body.username,
-                      profilePic: req.body.userpicture,
-                      leader: true,
-                      channels: [newChannel._id],
-                    });
                     const newTeam = new Team({
                       name: req.body.teamname,
                       members: [newUser],
@@ -46,6 +46,7 @@ router.post("/team", function (req, res) {
                       sprints: [],
                       channel: newChannel._id,
                     });
+                    newUser.channels = [newChannel._id];
                     newUser.team = newTeam;
                     newUser.save((error) => {
                       if (!error) {
