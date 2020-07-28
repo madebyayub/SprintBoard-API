@@ -42,19 +42,23 @@ router.get("/user/:id", function (req, res) {
     if (err) {
       res.sendStatus(500);
     } else {
-      User.findById(user._id)
-        .populate({
-          path: "channels",
-          model: "Channel",
-          populate: { path: "messages", model: "Message" },
-        })
-        .exec((err, transaction) => {
-          if (err) {
-            res.sendStatus(500);
-          } else {
-            res.json({ user: transaction });
-          }
-        });
+      if (user) {
+        User.findById(user._id)
+          .populate({
+            path: "channels",
+            model: "Channel",
+            populate: { path: "messages", model: "Message" },
+          })
+          .exec((err, transaction) => {
+            if (err) {
+              res.sendStatus(500);
+            } else {
+              res.json({ user: transaction });
+            }
+          });
+      } else {
+        res.json({});
+      }
     }
   });
 });
