@@ -52,6 +52,7 @@ io.on("connection", (socket) => {
       author: user,
       date: moment(),
       content: msg,
+      channelID: channel._id.toString(),
     });
     User.findOne({ userID: user.userID }, function (err, foundUser) {
       if (!err) {
@@ -175,24 +176,54 @@ io.on("connection", (socket) => {
                     foundChan.members = foundChan.members.filter((member) => {
                       return member.toString() !== user.toString();
                     });
-                    foundChan.save((err) => {
-                      if (!err) {
-                        User.findById(user)
-                          .populate({
-                            path: "channels",
-                            model: "Channel",
-                            populate: { path: "messages", model: "Message" },
-                          })
-                          .exec((err, transaction) => {
-                            if (!err) {
-                              io.to(`${socket.id}`).emit("channelListUpdate", {
-                                user: transaction,
-                                channel: transaction.channels[0],
-                              });
-                            }
-                          });
-                      }
-                    });
+                    if (foundChan.members.length === 0) {
+                      Channel.findByIdAndDelete(foundChan._id, function (
+                        err,
+                        delChannel
+                      ) {
+                        if (!err) {
+                          User.findById(user)
+                            .populate({
+                              path: "channels",
+                              model: "Channel",
+                              populate: { path: "messages", model: "Message" },
+                            })
+                            .exec((err, transaction) => {
+                              if (!err) {
+                                io.to(`${socket.id}`).emit(
+                                  "channelListUpdate",
+                                  {
+                                    user: transaction,
+                                    channel: transaction.channels[0],
+                                  }
+                                );
+                              }
+                            });
+                        }
+                      });
+                    } else {
+                      foundChan.save((err) => {
+                        if (!err) {
+                          User.findById(user)
+                            .populate({
+                              path: "channels",
+                              model: "Channel",
+                              populate: { path: "messages", model: "Message" },
+                            })
+                            .exec((err, transaction) => {
+                              if (!err) {
+                                io.to(`${socket.id}`).emit(
+                                  "channelListUpdate",
+                                  {
+                                    user: transaction,
+                                    channel: transaction.channels[0],
+                                  }
+                                );
+                              }
+                            });
+                        }
+                      });
+                    }
                   }
                 }
               });

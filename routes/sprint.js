@@ -6,6 +6,63 @@ const express = require("express"),
   Story = require("../models/Story"),
   Sprint = require("../models/Sprint");
 
+/* PATCH route to set the current sprint of a team */
+
+router.patch("/sprint", function (req, res) {
+  Team.findById(req.body.teamID, function (err, team) {
+    if (err) {
+      res.sendStatus(500);
+    } else {
+      if (!team) {
+        res.sendStatus(404);
+      } else {
+        Sprint.findOne({ team: team, current: true }, function (
+          err,
+          oldActive
+        ) {
+          if (err) {
+            res.sendStatus(500);
+          } else {
+            if (oldActive) {
+              oldActive.current = false;
+              oldActive.save((err) => {
+                if (!err) {
+                  Sprint.findById(req.body.sprint._id, function (
+                    err,
+                    newActive
+                  ) {
+                    newActive.current = true;
+                    newActive.save((err) => {
+                      if (err) {
+                        res.sendStatus(500);
+                      } else {
+                        helper.populateTeam(req, res, team._id);
+                      }
+                    });
+                  });
+                } else {
+                  res.sendStatus(500);
+                }
+              });
+            } else {
+              Sprint.findById(req.body.sprint._id, function (err, newActive) {
+                newActive.current = true;
+                newActive.save((err) => {
+                  if (err) {
+                    res.sendStatus(500);
+                  } else {
+                    helper.populateTeam(req, res, team._id);
+                  }
+                });
+              });
+            }
+          }
+        });
+      }
+    }
+  });
+});
+
 /* POST route to create a new Sprint for a team */
 
 router.post("/sprint", function (req, res) {
@@ -86,7 +143,10 @@ router.delete("/sprint", function (req, res) {
                   return onesprint._id.toString() !== sprint._id.toString();
                 });
                 const filteredStories = team.stories.filter((story) => {
-                  return !story.sprint || story.sprint.toString() !== sprint._id.toString();
+                  return (
+                    !story.sprint ||
+                    story.sprint.toString() !== sprint._id.toString()
+                  );
                 });
                 Story.deleteMany({ sprint: sprint._id }, (err, stories) => {
                   if (err) {
