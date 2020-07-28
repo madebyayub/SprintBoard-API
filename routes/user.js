@@ -42,8 +42,7 @@ router.get("/user/:id", function (req, res) {
     if (err) {
       res.sendStatus(500);
     } else {
-      res.json("test");
-      //helper.populateUser(req, res, user._id);
+      helper.populateUser(req, res, user._id);
     }
   });
 });

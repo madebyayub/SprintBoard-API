@@ -35,8 +35,7 @@ helper.populateSprint = function (req, res, ref) {
 };
 
 helper.populateUser = function (req, res, ref) {
-  res.header("Access-Control-Allow-Origin", "*");
-
+  res.json("test");
   User.findById(ref)
     .populate({
       path: "channels",
