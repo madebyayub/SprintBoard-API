@@ -22,8 +22,6 @@ const teamRoutes = require("./routes/team"),
   storyRoutes = require("./routes/story"),
   userRoutes = require("./routes/user"),
   sprintRoutes = require("./routes/sprint");
-const helper = require("./helper");
-const { trace } = require("console");
 
 app.use(
   cors({
