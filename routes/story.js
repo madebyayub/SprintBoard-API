@@ -6,12 +6,6 @@ const express = require("express"),
   Story = require("../models/Story"),
   Sprint = require("../models/Sprint");
 
-router.use(
-  cors({
-    origin: "http://www.sprintboard.ca",
-  })
-);
-
 /* DELETE route to remove a story from a team's story array */
 
 router.delete("/story", function (req, res) {

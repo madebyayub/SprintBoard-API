@@ -1,20 +1,13 @@
 const express = require("express"),
   router = express.Router(),
   helper = require("../helper"),
-  User = require("../models/User"),
-  Team = require("../models/Team"),
-  Story = require("../models/Story"),
-  Sprint = require("../models/Sprint");
-
-router.use(
-  cors({
-    origin: "http://www.sprintboard.ca",
-  })
-);
+  User = require("../models/User");
 
 /* Get route for fetching the team of a user. */
 
 router.get("/user/team/:id", function (req, res) {
+  res.header("Access-Control-Allow-Origin", "*");
+
   User.findOne({ userID: req.params.id }, function (err, user) {
     if (err) {
       res.sendStatus(500);

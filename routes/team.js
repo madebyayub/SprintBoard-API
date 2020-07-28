@@ -7,12 +7,6 @@ const express = require("express"),
   Sprint = require("../models/Sprint"),
   Channel = require("../models/Channel");
 
-router.use(
-  cors({
-    origin: "http://www.sprintboard.ca",
-  })
-);
-
 /* Post route to create a new team. Performs a check prior to ensure that a
    team with that name does not already exist. Responds with a message. */
 

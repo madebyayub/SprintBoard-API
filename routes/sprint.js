@@ -7,11 +7,6 @@ const express = require("express"),
   (Story = require("../models/Story")),
   (Sprint = require("../models/Sprint"));
 
-router.use(
-  cors({
-    origin: "http://www.sprintboard.ca",
-  })
-);
 /* PATCH route to set the current sprint of a team */
 
 router.patch("/sprint", function (req, res) {
