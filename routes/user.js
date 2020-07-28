@@ -6,6 +6,12 @@ const express = require("express"),
   Story = require("../models/Story"),
   Sprint = require("../models/Sprint");
 
+router.use(
+  cors({
+    origin: "http://www.sprintboard.ca",
+  })
+);
+
 /* Get route for fetching the team of a user. */
 
 router.get("/user/team/:id", function (req, res) {

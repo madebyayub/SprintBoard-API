@@ -1,11 +1,17 @@
 const express = require("express"),
   router = express.Router(),
   helper = require("../helper"),
-  User = require("../models/User"),
-  Team = require("../models/Team"),
-  Story = require("../models/Story"),
-  Sprint = require("../models/Sprint");
+  cors = require("cors");
+(User = require("../models/User")),
+  (Team = require("../models/Team")),
+  (Story = require("../models/Story")),
+  (Sprint = require("../models/Sprint"));
 
+router.use(
+  cors({
+    origin: "http://www.sprintboard.ca",
+  })
+);
 /* PATCH route to set the current sprint of a team */
 
 router.patch("/sprint", function (req, res) {
