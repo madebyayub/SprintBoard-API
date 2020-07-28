@@ -3,6 +3,32 @@ const express = require("express"),
   helper = require("../helper"),
   User = require("../models/User");
 
+/* POST route for creating a new user */
+
+router.post("/user", function (req, res) {
+  if (req.body && req.body.userID && req.body.profilePic && req.body.name) {
+    User.create(
+      {
+        userID: req.body.userID,
+        name: req.body.name,
+        profilePic: req.body.profilePic,
+        team: [],
+        channels: [],
+        leader: false,
+      },
+      function (err, user) {
+        if (!err) {
+          helper.populateUser(req, res, user._id);
+        } else {
+          res.sendStatus(500);
+        }
+      }
+    );
+  } else {
+    res.sendStatus(403);
+  }
+});
+
 /* Get route for fetching the team of a user. */
 
 router.get("/user/team/:id", function (req, res) {
