@@ -51,17 +51,12 @@ mongoose.connection.on("connected", () => {
 });
 
 io.on("connection", (socket) => {
-  socket.on("join", ({ user, channel }) => {
-    console.log(
-      user.name + " has joined the message board, in channel " + channel.name
-    );
-  });
-
   socket.on("message", ({ user, msg, channel }) => {
     socket.broadcast.emit("message", {
       author: user,
       date: moment(),
       content: msg,
+      channelID: channel._id.toString(),
     });
     User.findOne({ userID: user.userID }, function (err, foundUser) {
       if (!err) {
@@ -91,6 +86,7 @@ io.on("connection", (socket) => {
       }
     });
   });
+
   socket.on("populateChannel", ({ channel }) => {
     Channel.findById(channel)
       .populate({
@@ -184,24 +180,54 @@ io.on("connection", (socket) => {
                     foundChan.members = foundChan.members.filter((member) => {
                       return member.toString() !== user.toString();
                     });
-                    foundChan.save((err) => {
-                      if (!err) {
-                        User.findById(user)
-                          .populate({
-                            path: "channels",
-                            model: "Channel",
-                            populate: { path: "messages", model: "Message" },
-                          })
-                          .exec((err, transaction) => {
-                            if (!err) {
-                              io.to(`${socket.id}`).emit("channelListUpdate", {
-                                user: transaction,
-                                channel: transaction.channels[0],
-                              });
-                            }
-                          });
-                      }
-                    });
+                    if (foundChan.members.length === 0) {
+                      Channel.findByIdAndDelete(foundChan._id, function (
+                        err,
+                        delChannel
+                      ) {
+                        if (!err) {
+                          User.findById(user)
+                            .populate({
+                              path: "channels",
+                              model: "Channel",
+                              populate: { path: "messages", model: "Message" },
+                            })
+                            .exec((err, transaction) => {
+                              if (!err) {
+                                io.to(`${socket.id}`).emit(
+                                  "channelListUpdate",
+                                  {
+                                    user: transaction,
+                                    channel: transaction.channels[0],
+                                  }
+                                );
+                              }
+                            });
+                        }
+                      });
+                    } else {
+                      foundChan.save((err) => {
+                        if (!err) {
+                          User.findById(user)
+                            .populate({
+                              path: "channels",
+                              model: "Channel",
+                              populate: { path: "messages", model: "Message" },
+                            })
+                            .exec((err, transaction) => {
+                              if (!err) {
+                                io.to(`${socket.id}`).emit(
+                                  "channelListUpdate",
+                                  {
+                                    user: transaction,
+                                    channel: transaction.channels[0],
+                                  }
+                                );
+                              }
+                            });
+                        }
+                      });
+                    }
                   }
                 }
               });
@@ -211,6 +237,41 @@ io.on("connection", (socket) => {
       }
     });
   });
+
+  socket.on("addMembers", ({ members, channel }) => {
+    Channel.findById(channel._id, function (err, foundChannel) {
+      if (!err) {
+        if (foundChannel) {
+          members.forEach((member) => {
+            User.findById(member._id, function (err, user) {
+              if (!err) {
+                if (user) {
+                  user.channels = [...user.channels, foundChannel];
+                  user.save();
+                }
+              }
+            });
+          });
+          foundChannel.members = [...foundChannel.members, ...members];
+          foundChannel.save((err) => {
+            if (!err) {
+              // Send new members added socket request to members of the channel
+              // They need to update the list of members in the channel on client side.
+              // Information needed to send:
+              // - channel
+
+              // Send the channel that they've been added to to the users that were added
+              // They need their currentUser global state to be updated so that their channel list rerenders
+              // Information needed to send:
+              // - tell them to request their user info from API
+              console.log(foundChannel.members);
+            }
+          });
+        }
+      }
+    });
+  });
+
   socket.on("createChannel", ({ name, isPrivate, user }) => {
     User.findById(user, function (err, user) {
       if (!err) {
