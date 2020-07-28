@@ -7,6 +7,8 @@ const User = require("./models/User"),
 const helper = {};
 
 helper.populateSprint = function (req, res, ref) {
+  res.header("Access-Control-Allow-Origin", "*");
+
   Sprint.find({ team: ref })
     .populate({
       path: "stories",
@@ -33,6 +35,8 @@ helper.populateSprint = function (req, res, ref) {
 };
 
 helper.populateUser = function (req, res, ref) {
+  res.header("Access-Control-Allow-Origin", "*");
+
   User.findById(ref)
     .populate({
       path: "channels",
@@ -49,6 +53,8 @@ helper.populateUser = function (req, res, ref) {
 };
 
 helper.populateTeam = function (req, res, ref) {
+  res.header("Access-Control-Allow-Origin", "*");
+
   Team.findById(ref)
     .populate({
       path: "stories",
