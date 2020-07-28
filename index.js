@@ -333,6 +333,9 @@ app.use(storyRoutes);
 
 app.use(sprintRoutes);
 
+app.get("/test", function (req, res) {
+  res.json("wtf");
+});
 /*
 
   Server listen setup
