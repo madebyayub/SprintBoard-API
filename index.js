@@ -320,7 +320,7 @@ io.on("connection", (socket) => {
 
 // Routes associated with user
 
-app.use(userRoutes);
+//app.use(userRoutes);
 
 // Routes associated with team
 
