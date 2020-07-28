@@ -26,7 +26,7 @@ const teamRoutes = require("./routes/team"),
 
 app.use(
   cors({
-    origin: "http://www.sprintboard.ca",
+    origin: "http://localhost:3000",
   })
 );
 app.use(bp.json());
