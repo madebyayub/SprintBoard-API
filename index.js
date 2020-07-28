@@ -14,6 +14,7 @@ const express = require("express"),
   Sprint = require("./models/Sprint"),
   Channel = require("./models/Channel"),
   Message = require("./models/Message"),
+  helper = require("./helper"),
   app = express(),
   server = http.createServer(app),
   io = socketio(server);
