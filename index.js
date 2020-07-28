@@ -25,7 +25,11 @@ const teamRoutes = require("./routes/team"),
 const helper = require("./helper");
 const { trace } = require("console");
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://www.sprintboard.ca",
+  })
+);
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
