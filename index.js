@@ -22,7 +22,8 @@ const express = require("express"),
 const teamRoutes = require("./routes/team"),
   storyRoutes = require("./routes/story"),
   userRoutes = require("./routes/user"),
-  sprintRoutes = require("./routes/sprint");
+  sprintRoutes = require("./routes/sprint"),
+  channelRoutes = require("./routes/channel");
 
 app.use(
   cors({
@@ -252,20 +253,7 @@ io.on("connection", (socket) => {
             });
           });
           foundChannel.members = [...foundChannel.members, ...members];
-          foundChannel.save((err) => {
-            if (!err) {
-              // Send new members added socket request to members of the channel
-              // They need to update the list of members in the channel on client side.
-              // Information needed to send:
-              // - channel
-
-              // Send the channel that they've been added to to the users that were added
-              // They need their currentUser global state to be updated so that their channel list rerenders
-              // Information needed to send:
-              // - tell them to request their user info from API
-              console.log(foundChannel.members);
-            }
-          });
+          foundChannel.save();
         }
       }
     });
@@ -307,9 +295,6 @@ io.on("connection", (socket) => {
       }
     });
   });
-  socket.on("disconnect", () => {
-    console.log("A user has left the chat");
-  });
 });
 
 /*
@@ -317,6 +302,10 @@ io.on("connection", (socket) => {
   ROUTES
 
 */
+
+// Routes associated with channel
+
+app.use(channelRoutes);
 
 // Routes associated with user
 
